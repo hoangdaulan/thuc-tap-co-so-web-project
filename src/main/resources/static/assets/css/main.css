@@ -2311,3 +2311,17 @@ input[type=number] {
     display: none;
 }
 
+.widget-contact-item a {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.widget-contact-item span {
+    white-space: nowrap;
+}
+
+.widget-row-col {
+    min-width: 220px;
+}
+
