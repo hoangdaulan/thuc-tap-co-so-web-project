@@ -10,8 +10,9 @@
     <link rel="stylesheet" href="./assets/css/main.css">
     <link rel="stylesheet" href="./assets/css/home-responsive.css">
     <link rel="stylesheet" href="./assets/css/toast-message.css">
-    <link rel="stylesheet" href="./assets/font/font-awesome-pro-v6-6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="./assets/font/font-awesome-pro-v6-6.2.0/css/all.min.css" />
 </head>
+
 <body>
     <header>
         <div class="header-top">
@@ -67,8 +68,10 @@
                                 <span class="text-tk">Tài khoản <i class="fa-sharp fa-solid fa-caret-down"></i></span>
                             </div>
                             <ul class="header-middle-right-menu">
-                                <li><a id="login" href="javascript:;"><i class="fa-light fa-right-to-bracket"></i> Đăng nhập</a></li>
-                                <li><a id="signup" href="javascript:;"><i class="fa-light fa-user-plus"></i> Đăng ký</a></li>
+                                <li><a id="login" href="javascript:;"><i class="fa-light fa-right-to-bracket"></i> Đăng
+                                        nhập</a></li>
+                                <li><a id="signup" href="javascript:;"><i class="fa-light fa-user-plus"></i> Đăng ký</a>
+                                </li>
                             </ul>
                         </li>
                         <li class="header-middle-right-item open" onclick="openCart()">
@@ -87,12 +90,18 @@
         <div class="container">
             <ul class="menu-list">
                 <li class="menu-list-item"><a href="" class="menu-link">Trang chủ</a></li>
-                <li class="menu-list-item" onclick="showCategory('Combo 1 Người')"><a href="javascript:;" class="menu-link">Combo 1 Người</a></li>
-                <li class="menu-list-item" onclick="showCategory('Combo Nhóm')"><a href="javascript:;" class="menu-link">Combo Nhóm</a></li>
-                <li class="menu-list-item" onclick="showCategory('Gà Rán - Gà Quay')"><a href="javascript:;" class="menu-link">Gà Rán - Gà Quay</a></li>
-                <li class="menu-list-item" onclick="showCategory('Burger - Cơm - Mì Ý')"><a href="javascript:;" class="menu-link">Burger - Cơm - Mì Ý</a></li>
-                <li class="menu-list-item" onclick="showCategory('Thức Ăn Nhẹ')"><a href="javascript:;" class="menu-link">Thức Ăn Nhẹ</a></li>
-                <li class="menu-list-item" onclick="showCategory('Thức Uống & Tráng Miệng')"><a href="javascript:;" class="menu-link">Thức Uống & Tráng Miệng</a></li>
+                <li class="menu-list-item" onclick="showCategory('Combo 1 Người')"><a href="javascript:;"
+                        class="menu-link">Combo 1 Người</a></li>
+                <li class="menu-list-item" onclick="showCategory('Combo Nhóm')"><a href="javascript:;"
+                        class="menu-link">Combo Nhóm</a></li>
+                <li class="menu-list-item" onclick="showCategory('Gà Rán - Gà Quay')"><a href="javascript:;"
+                        class="menu-link">Gà Rán - Gà Quay</a></li>
+                <li class="menu-list-item" onclick="showCategory('Burger - Cơm - Mì Ý')"><a href="javascript:;"
+                        class="menu-link">Burger - Cơm - Mì Ý</a></li>
+                <li class="menu-list-item" onclick="showCategory('Thức Ăn Nhẹ')"><a href="javascript:;"
+                        class="menu-link">Thức Ăn Nhẹ</a></li>
+                <li class="menu-list-item" onclick="showCategory('Thức Uống & Tráng Miệng')"><a href="javascript:;"
+                        class="menu-link">Thức Uống & Tráng Miệng</a></li>
 
             </ul>
         </div>
@@ -119,9 +128,12 @@
                 <button id="advanced-search-price-btn"><i class="fa-light fa-magnifying-glass-dollar"></i></button>
             </div>
             <div class="advanced-search-control">
-                <button id="sort-ascending" onclick="searchProducts(1)"><i class="fa-regular fa-arrow-up-short-wide"></i></button>
-                <button id="sort-descending" onclick="searchProducts(2)"><i class="fa-regular fa-arrow-down-wide-short"></i></button>
-                <button id="reset-search" onclick="searchProducts(0)"><i class="fa-light fa-arrow-rotate-right"></i></button>
+                <button id="sort-ascending" onclick="searchProducts(1)"><i
+                        class="fa-regular fa-arrow-up-short-wide"></i></button>
+                <button id="sort-descending" onclick="searchProducts(2)"><i
+                        class="fa-regular fa-arrow-down-wide-short"></i></button>
+                <button id="reset-search" onclick="searchProducts(0)"><i
+                        class="fa-light fa-arrow-rotate-right"></i></button>
                 <button onclick="closeSearchAdvanced()"><i class="fa-light fa-xmark"></i></button>
             </div>
         </div>
@@ -277,29 +289,29 @@
                     </h3>
                     <p class="form-description">Đăng ký thành viên để mua hàng và nhận những ưu đãi đặc biệt từ chúng
                         tôi </p>
-                    <form action="" class="signup-form">
+                    <form action="" class="signup-form" id="signupFormId">
                         <div class="form-group">
                             <label for="fullname" class="form-label">Tên đầy đủ</label>
                             <input id="fullname" name="fullname" type="text" placeholder="VD: Nhật Sinh"
-                                class="form-control">
+                                class="form-control" required>
                             <span class="form-message-name form-message"></span>
                         </div>
                         <div class="form-group">
                             <label for="phone" class="form-label">Số điện thoại</label>
-                            <input id="phone" name="phone" type="text" placeholder="Nhập số điện thoại"
-                                class="form-control">
+                            <input id="phone-signup" name="phone" type="text" placeholder="Nhập số điện thoại"
+                                class="form-control" required>
                             <span class="form-message-phone form-message"></span>
                         </div>
                         <div class="form-group">
-                            <label for="password" class="form-label">Mật khẩu</label>
-                            <input id="password" name="password" type="password" placeholder="Nhập mật khẩu"
-                                class="form-control">
+                            <label for="password-signup" class="form-label">Mật khẩu</label>
+                            <input id="password-signup" name="password" type="password" placeholder="Nhập mật khẩu"
+                                class="form-control" required>
                             <span class="form-message-password form-message"></span>
                         </div>
                         <div class="form-group">
                             <label for="password_confirmation" class="form-label">Nhập lại mật khẩu</label>
                             <input id="password_confirmation" name="password_confirmation"
-                                placeholder="Nhập lại mật khẩu" type="password" class="form-control">
+                                placeholder="Nhập lại mật khẩu" type="password" class="form-control" required>
                             <span class="form-message-password-confi form-message"></span>
                         </div>
                         <div class="form-group">
@@ -308,7 +320,7 @@
                                     title="chính sách trang web" target="_blank">chính sách trang web</a></label>
                             <p class="form-message-checkbox form-message"></p>
                         </div>
-                        <button class="form-submit" id="signup-button">Đăng ký</button>
+                        <button type="submit" class="form-submit" id="signup-button">Đăng ký</button>
                     </form>
                     <p class="change-login">Bạn đã có tài khoản ? <a href="javascript:;" class="login-link">Đăng nhập
                             ngay</a></p>
@@ -317,20 +329,20 @@
                     <h3 class="form-title">Đăng nhập tài khoản</h3>
                     <p class="form-description">Đăng nhập thành viên để mua hàng và nhận những ưu đãi đặc biệt từ chúng
                         tôi</p>
-                    <form action="" class="login-form">
+                    <form action="" class="login-form" id="loginFormId">
                         <div class="form-group">
-                            <label for="phone" class="form-label">Số điện thoại</label>
-                            <input id="phone-login" name="phone" type="text" placeholder="Nhập số điện thoại"
-                                class="form-control">
+                            <label for="username" class="form-label">Tên đăng nhập / Số điện thoại</label>
+                            <input id="username" name="username" type="text"
+                                placeholder="Nhập tên đăng nhập hoặc số điện thoại" class="form-control" required>
                             <span class="form-message phonelog"></span>
                         </div>
                         <div class="form-group">
                             <label for="password" class="form-label">Mật khẩu</label>
-                            <input id="password-login" name="password" type="password" placeholder="Nhập mật khẩu"
-                                class="form-control">
+                            <input id="password" name="password" type="password" placeholder="Nhập mật khẩu"
+                                class="form-control" required>
                             <span class="form-message-check-login form-message"></span>
                         </div>
-                        <button class="form-submit" id="login-button">Đăng nhập</button>
+                        <button type="submit" class="form-submit" id="login-button">Đăng nhập</button>
                     </form>
                     <p class="change-login">Bạn chưa có tài khoản ? <a href="javascript:;" class="signup-link">Đăng kí
                             ngay</a></p>
@@ -401,7 +413,8 @@
                     <div class="widget-row-col-1">
                         <h3 class="widget-title">Về chúng tôi</h3>
                         <div class="widget-row-col-content">
-                            <p>CFC Chicken là thương hiệu được thành lập vào năm 2022 với tiêu chí đặt chất lượng sản phẩm lên hàng đầu.</p>
+                            <p>CFC Chicken là thương hiệu được thành lập vào năm 2022 với tiêu chí đặt chất lượng sản
+                                phẩm lên hàng đầu.</p>
                         </div>
                         <div class="widget-social">
                             <div class="widget-social-item">
@@ -695,5 +708,8 @@
     <script src="./js/main.js"></script>
     <script src="./js/checkout.js"></script>
     <script src="./js/toast-message.js"></script>
+    <script src="./js/login.js"></script>
+    <script src="./js/login.js" defer></script>
 </body>
+
 </html>
