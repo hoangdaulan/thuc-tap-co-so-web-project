@@ -114,9 +114,9 @@ function detailProduct(index) {
 
 function animationCart() {
     document.querySelector(".count-product-cart").style.animation = "slidein ease 1s"
-    setTimeout(()=>{
+    setTimeout(() => {
         document.querySelector(".count-product-cart").style.animation = "none"
-    },1000)
+    }, 1000)
 }
 
 // Them SP vao gio hang
@@ -239,8 +239,8 @@ function getProduct(item) {
     return product;
 }
 
-window.onload = updateAmount();
-window.onload = updateCartTotal();
+document.addEventListener('DOMContentLoaded', updateAmount);
+document.addEventListener('DOMContentLoaded', updateCartTotal);
 
 // Lay so luong hang
 
@@ -293,13 +293,13 @@ function closeCart() {
 }
 
 // Open Search Advanced
-document.querySelector(".filter-btn").addEventListener("click",(e) => {
+document.querySelector(".filter-btn").addEventListener("click", (e) => {
     e.preventDefault();
     document.querySelector(".advanced-search").classList.toggle("open");
     document.getElementById("home-service").scrollIntoView();
 })
 
-document.querySelector(".form-search-input").addEventListener("click",(e) => {
+document.querySelector(".form-search-input").addEventListener("click", (e) => {
     e.preventDefault();
     document.getElementById("home-service").scrollIntoView();
 })
@@ -314,7 +314,7 @@ function openSearchMb() {
     document.querySelector(".header-middle-center").style.display = "block";
     document.querySelector(".header-middle-right-item.close").style.display = "block";
     let liItem = document.querySelectorAll(".header-middle-right-item.open");
-    for(let i = 0; i < liItem.length; i++) {
+    for (let i = 0; i < liItem.length; i++) {
         liItem[i].style.setProperty("display", "none", "important")
     }
 }
@@ -325,7 +325,7 @@ function closeSearchMb() {
     document.querySelector(".header-middle-center").style.display = "none";
     document.querySelector(".header-middle-right-item.close").style.display = "none";
     let liItem = document.querySelectorAll(".header-middle-right-item.open");
-    for(let i = 0; i < liItem.length; i++) {
+    for (let i = 0; i < liItem.length; i++) {
         liItem[i].style.setProperty("display", "block", "important")
     }
 }
@@ -365,11 +365,12 @@ loginbtn.addEventListener('click', () => {
 // Chức năng đăng ký
 let signupButton = document.getElementById('signup-button');
 let loginButton = document.getElementById('login-button');
+/* Old local storage registration removed to prevent conflict with fetch API in login.js
 signupButton.addEventListener('click', () => {
     event.preventDefault();
     let fullNameUser = document.getElementById('fullname').value;
-    let phoneUser = document.getElementById('phone').value;
-    let passwordUser = document.getElementById('password').value;
+    let phoneUser = document.getElementById('phone-signup').value;
+    let passwordUser = document.getElementById('password-signup').value;
     let passwordConfirmation = document.getElementById('password_confirmation').value;
     let checkSignup = document.getElementById('checkbox-signup').checked;
     // Check validate
@@ -386,7 +387,7 @@ signupButton.addEventListener('click', () => {
         document.querySelector('.form-message-phone').innerHTML = 'Vui lòng nhập vào số điện thoại';
     } else if (phoneUser.length != 10) {
         document.querySelector('.form-message-phone').innerHTML = 'Vui lòng nhập vào số điện thoại 10 số';
-        document.getElementById('phone').value = '';
+        document.getElementById('phone-signup').value = '';
     } else {
         document.querySelector('.form-message-phone').innerHTML = '';
     }
@@ -394,7 +395,7 @@ signupButton.addEventListener('click', () => {
         document.querySelector('.form-message-password').innerHTML = 'Vui lòng nhập mật khẩu';
     } else if (passwordUser.length < 6) {
         document.querySelector('.form-message-password').innerHTML = 'Vui lòng nhập mật khẩu lớn hơn 6 kí tự';
-        document.getElementById('password').value = '';
+        document.getElementById('password-signup').value = '';
     } else {
         document.querySelector('.form-message-password').innerHTML = '';
     }
@@ -446,52 +447,10 @@ signupButton.addEventListener('click', () => {
     }
 }
 )
+*/
 
 // Dang nhap
-loginButton.addEventListener('click', () => {
-    event.preventDefault();
-    let phonelog = document.getElementById('phone-login').value;
-    let passlog = document.getElementById('password-login').value;
-    let accounts = JSON.parse(localStorage.getItem('accounts'));
-
-    if (phonelog.length == 0) {
-        document.querySelector('.form-message.phonelog').innerHTML = 'Vui lòng nhập vào số điện thoại';
-    } else if (phonelog.length != 10) {
-        document.querySelector('.form-message.phonelog').innerHTML = 'Vui lòng nhập vào số điện thoại 10 số';
-        document.getElementById('phone-login').value = '';
-    } else {
-        document.querySelector('.form-message.phonelog').innerHTML = '';
-    }
-
-    if (passlog.length == 0) {
-        document.querySelector('.form-message-check-login').innerHTML = 'Vui lòng nhập mật khẩu';
-    } else if (passlog.length < 6) {
-        document.querySelector('.form-message-check-login').innerHTML = 'Vui lòng nhập mật khẩu lớn hơn 6 kí tự';
-        document.getElementById('passwordlogin').value = '';
-    } else {
-        document.querySelector('.form-message-check-login').innerHTML = '';
-    }
-
-    if (phonelog && passlog) {
-        let vitri = accounts.findIndex(item => item.phone == phonelog);
-        if (vitri == -1) {
-            toast({ title: 'Error', message: 'Tài khoản của bạn không tồn tại', type: 'error', duration: 3000 });
-        } else if (accounts[vitri].password == passlog) {
-            if(accounts[vitri].status == 0) {
-                toast({ title: 'Warning', message: 'Tài khoản của bạn đã bị khóa', type: 'warning', duration: 3000 });
-            } else {
-                localStorage.setItem('currentuser', JSON.stringify(accounts[vitri]));
-                toast({ title: 'Success', message: 'Đăng nhập thành công', type: 'success', duration: 3000 });
-                closeModal();
-                kiemtradangnhap();
-                checkAdmin();
-                updateAmount();
-            }
-        } else {
-            toast({ title: 'Warning', message: 'Sai mật khẩu', type: 'warning', duration: 3000 });
-        }
-    }
-})
+// Removed old local storage login function to avoid conflict with new Fetch API login in index.html
 
 // Kiểm tra xem có tài khoản đăng nhập không ?
 function kiemtradangnhap() {
@@ -503,34 +462,28 @@ function kiemtradangnhap() {
         document.querySelector('.header-middle-right-menu').innerHTML = `<li><a href="javascript:;" onclick="myAccount()"><i class="fa-light fa-circle-user"></i> Tài khoản của tôi</a></li>
             <li><a href="javascript:;" onclick="orderHistory()"><i class="fa-regular fa-bags-shopping"></i> Đơn hàng đã mua</a></li>
             <li class="border"><a id="logout" href="javascript:;"><i class="fa-light fa-right-from-bracket"></i> Thoát tài khoản</a></li>`
-        document.querySelector('#logout').addEventListener('click',logOut)
+        document.querySelector('#logout').addEventListener('click', logOut)
     }
 }
 
 function logOut() {
-    let accounts = JSON.parse(localStorage.getItem('accounts'));
-    user = JSON.parse(localStorage.getItem('currentuser'));
-    let vitri = accounts.findIndex(item => item.phone == user.phone)
-    accounts[vitri].cart.length = 0;
-    for (let i = 0; i < user.cart.length; i++) {
-        accounts[vitri].cart[i] = user.cart[i];
-    }
-    localStorage.setItem('accounts', JSON.stringify(accounts));
+    // Xóa user và jwtToken khỏi localStorage
     localStorage.removeItem('currentuser');
+    localStorage.removeItem('jwtToken');
     window.location = "/";
 }
 
 function checkAdmin() {
     let user = JSON.parse(localStorage.getItem('currentuser'));
-    if(user && user.userType == 1) {
+    if (user && user.userType == 1) {
         let node = document.createElement(`li`);
         node.innerHTML = `<a href="./admin.html"><i class="fa-light fa-gear"></i> Quản lý cửa hàng</a>`
         document.querySelector('.header-middle-right-menu').prepend(node);
-    } 
+    }
 }
 
-window.onload = kiemtradangnhap();
-window.onload = checkAdmin();
+document.addEventListener('DOMContentLoaded', kiemtradangnhap);
+document.addEventListener('DOMContentLoaded', checkAdmin);
 
 // Chuyển đổi trang chủ và trang thông tin tài khoản
 function myAccount() {
@@ -570,7 +523,7 @@ function userInfo() {
 
 // Thay doi thong tin
 function changeInformation() {
-    let accounts = JSON.parse(localStorage.getItem('accounts'));
+    let accounts = localStorage.getItem('accounts') ? JSON.parse(localStorage.getItem('accounts')) : null;
     let user = JSON.parse(localStorage.getItem('currentuser'));
     let infoname = document.getElementById('infoname');
     let infoemail = document.getElementById('infoemail');
@@ -590,13 +543,17 @@ function changeInformation() {
         user.address = infoaddress.value;
     }
 
-    let vitri = accounts.findIndex(item => item.phone == user.phone)
-
-    accounts[vitri].fullname = user.fullname;
-    accounts[vitri].email = user.email;
-    accounts[vitri].address = user.address;
+    if (accounts) {
+        let vitri = accounts.findIndex(item => item.phone == user.phone);
+        if (vitri !== -1) {
+            accounts[vitri].fullname = user.fullname;
+            accounts[vitri].email = user.email;
+            accounts[vitri].address = user.address;
+            localStorage.setItem('accounts', JSON.stringify(accounts));
+        }
+    }
+    
     localStorage.setItem('currentuser', JSON.stringify(user));
-    localStorage.setItem('accounts', JSON.stringify(accounts));
     kiemtradangnhap();
     toast({ title: 'Success', message: 'Cập nhật thông tin thành công !', type: 'success', duration: 3000 });
 }
@@ -643,13 +600,15 @@ function changePassword() {
                                 document.querySelector('.password-after-comfirm-error').innerHTML = '';
                                 currentUser.password = passwordAfter.value;
                                 localStorage.setItem('currentuser', JSON.stringify(currentUser));
-                                let userChange = JSON.parse(localStorage.getItem('currentuser'));
-                                let accounts = JSON.parse(localStorage.getItem('accounts'));
-                                let accountChange = accounts.find(acc => {
-                                    return acc.phone = userChange.phone;
-                                })
-                                accountChange.password = userChange.password;
-                                localStorage.setItem('accounts', JSON.stringify(accounts));
+                                
+                                let accounts = localStorage.getItem('accounts') ? JSON.parse(localStorage.getItem('accounts')) : null;
+                                if (accounts) {
+                                    let accountChange = accounts.find(acc => acc.phone === currentUser.phone);
+                                    if (accountChange) {
+                                        accountChange.password = currentUser.password;
+                                        localStorage.setItem('accounts', JSON.stringify(accounts));
+                                    }
+                                }
                                 toast({ title: 'Success', message: 'Đổi mật khẩu thành công !', type: 'success', duration: 3000 });
                             } else {
                                 document.querySelector('.password-after-comfirm-error').innerHTML = 'Mật khẩu bạn nhập không trùng khớp';
@@ -734,7 +693,7 @@ function getOrderDetails(madon) {
     let orderDetails = localStorage.getItem("orderDetails") ? JSON.parse(localStorage.getItem("orderDetails")) : [];
     let ctDon = [];
     orderDetails.forEach(item => {
-        if(item.madon == madon) {
+        if (item.madon == madon) {
             ctDon.push(item);
         }
     });
@@ -814,7 +773,7 @@ const headerNav = document.querySelector(".header-bottom");
 let lastScrollY = window.scrollY;
 
 window.addEventListener("scroll", () => {
-    if(lastScrollY < window.scrollY) {
+    if (lastScrollY < window.scrollY) {
         headerNav.classList.add("hide")
     } else {
         headerNav.classList.remove("hide")
@@ -825,7 +784,7 @@ window.addEventListener("scroll", () => {
 // Page
 function renderProducts(showProduct) {
     let productHtml = '';
-    if(showProduct.length == 0) {
+    if (showProduct.length == 0) {
         document.getElementById("home-title").style.display = "none";
         productHtml = `<div class="no-result"><div class="no-result-h">Tìm kiếm không có kết quả</div><div class="no-result-p">Xin lỗi, chúng tôi không thể tìm được kết quả hợp với tìm kiếm của bạn</div><div class="no-result-i"><i class="fa-light fa-face-sad-cry"></i></div></div>`;
     } else {
@@ -867,7 +826,7 @@ function searchProducts(mode) {
     let valueCategory = document.getElementById("advanced-search-category-select").value;
     let minPrice = document.getElementById("min-price").value;
     let maxPrice = document.getElementById("max-price").value;
-    if(parseInt(minPrice) > parseInt(maxPrice) && minPrice != "" && maxPrice != "") {
+    if (parseInt(minPrice) > parseInt(maxPrice) && minPrice != "" && maxPrice != "") {
         alert("Giá đã nhập sai !");
     }
 
@@ -879,16 +838,16 @@ function searchProducts(mode) {
         return item.title.toString().toUpperCase().includes(valeSearchInput.toString().toUpperCase());
     })
 
-    if(minPrice == "" && maxPrice != "") {
+    if (minPrice == "" && maxPrice != "") {
         result = result.filter((item) => item.price <= maxPrice);
     } else if (minPrice != "" && maxPrice == "") {
         result = result.filter((item) => item.price >= minPrice);
-    } else if(minPrice != "" && maxPrice != "") {
+    } else if (minPrice != "" && maxPrice != "") {
         result = result.filter((item) => item.price <= maxPrice && item.price >= minPrice);
     }
 
     document.getElementById("home-service").scrollIntoView();
-    switch (mode){
+    switch (mode) {
         case 0:
             result = JSON.parse(localStorage.getItem('products'));;
             document.querySelector('.form-search-input').value = "";
@@ -897,10 +856,10 @@ function searchProducts(mode) {
             document.getElementById("max-price").value = "";
             break;
         case 1:
-            result.sort((a,b) => a.price - b.price)
+            result.sort((a, b) => a.price - b.price)
             break;
         case 2:
-            result.sort((a,b) => b.price - a.price)
+            result.sort((a, b) => b.price - a.price)
             break;
     }
     showHomeProduct(result)
