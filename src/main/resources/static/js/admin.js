@@ -8,7 +8,6 @@ function checkLogin() {
         document.getElementById("name-acc").innerHTML = currentUser.fullname;
     }
 }
-window.onload = checkLogin();
 
 //do sidebar open and close
 const menuIconButton = document.querySelector(".menu-icon-btn");
@@ -69,7 +68,6 @@ function getMoney() {
     return tongtien;
 }
 
-document.getElementById("amount-user").innerHTML = getAmoumtUser();
 document.getElementById("amount-product").innerHTML = getAmoumtProduct();
 document.getElementById("doanh-thu").innerHTML = vnd(getMoney());
 
@@ -77,7 +75,7 @@ document.getElementById("doanh-thu").innerHTML = vnd(getMoney());
 function vnd(price) {
     return price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
 }
-// Phân trang 
+// Phân trang
 let perPage = 12;
 let currentPage = 1;
 let totalPage = 0;
@@ -116,14 +114,14 @@ function paginationChange(page, productAll, currentPage) {
     return node;
 }
 
-// Hiển thị danh sách sản phẩm 
+// Hiển thị danh sách sản phẩm
 function showProductArr(arr) {
     let productHtml = "";
     if(arr.length == 0) {
         productHtml = `<div class="no-result"><div class="no-result-i"><i class="fa-light fa-face-sad-cry"></i></div><div class="no-result-h">Không có sản phẩm để hiển thị</div></div>`;
     } else {
         arr.forEach(product => {
-            let btnCtl = product.status == 1 ? 
+            let btnCtl = product.status == 1 ?
             `<button class="btn-delete" onclick="deleteProduct(${product.id})"><i class="fa-regular fa-trash"></i></button>` :
             `<button class="btn-delete" onclick="changeStatusProduct(${product.id})"><i class="fa-regular fa-eye"></i></button>`;
             productHtml += `
@@ -138,15 +136,15 @@ function showProductArr(arr) {
                 </div>
                 <div class="list-right">
                     <div class="list-price">
-                    <span class="list-current-price">${vnd(product.price)}</span>                   
+                    <span class="list-current-price">${vnd(product.price)}</span>
                     </div>
                     <div class="list-control">
                     <div class="list-tool">
                         <button class="btn-edit" onclick="editProduct(${product.id})"><i class="fa-light fa-pen-to-square"></i></button>
                         ${btnCtl}
-                    </div>                       
+                    </div>
                 </div>
-                </div> 
+                </div>
             </div>`;
         });
     }
@@ -182,7 +180,6 @@ function cancelSearchProduct() {
     setupPagination(products, perPage, currentPage);
 }
 
-window.onload = showProduct();
 
 function createId(arr) {
     let id = arr.length;
@@ -193,7 +190,7 @@ function createId(arr) {
     }
     return id;
 }
-// Xóa sản phẩm 
+// Xóa sản phẩm
 function deleteProduct(id) {
     let products = JSON.parse(localStorage.getItem("products"));
     let index = products.findIndex(item => {
@@ -398,20 +395,17 @@ function showOrder(arr) {
             <td>${item.id}</td>
             <td>${item.khachhang}</td>
             <td>${date}</td>
-            <td>${vnd(item.tongtien)}</td>                               
+            <td>${vnd(item.tongtien)}</td>
             <td>${status}</td>
             <td class="control">
             <button class="btn-detail" id="" onclick="detailOrder('${item.id}')"><i class="fa-regular fa-eye"></i> Chi tiết</button>
             </td>
-            </tr>      
+            </tr>
             `;
         });
     }
     document.getElementById("showOrder").innerHTML = orderHtml;
 }
-
-let orders = localStorage.getItem("order") ? JSON.parse(localStorage.getItem("order")) : [];
-window.onload = showOrder(orders);
 
 // Get Order Details
 function getOrderDetails(madon) {
@@ -431,7 +425,7 @@ function detailOrder(id) {
     document.querySelector(".modal.detail-order").classList.add("open");
     let orders = localStorage.getItem("order") ? JSON.parse(localStorage.getItem("order")) : [];
     let products = localStorage.getItem("order") ? JSON.parse(localStorage.getItem("products")) : [];
-    // Lấy hóa đơn 
+    // Lấy hóa đơn
     let order = orders.find((item) => item.id == id);
     // Lấy chi tiết hóa đơn
     let ctDon = getOrderDetails(id);
@@ -451,7 +445,7 @@ function detailOrder(id) {
             <div class="order-product-right">
                 <div class="order-product-price">
                     <span class="order-product-current-price">${vnd(item.price)}</span>
-                </div>                         
+                </div>
             </div>
         </div>`;
     });
@@ -511,7 +505,7 @@ function findOrder() {
     let ct = document.getElementById("form-search-order").value;
     let timeStart = document.getElementById("time-start").value;
     let timeEnd = document.getElementById("time-end").value;
-    
+
     if (timeEnd < timeStart && timeEnd != "" && timeStart != "") {
         alert("Lựa chọn thời gian sai !");
         return;
@@ -553,8 +547,8 @@ function cancelSearchOrder(){
 // Create Object Thong ke
 function createObj() {
     let orders = localStorage.getItem("order") ? JSON.parse(localStorage.getItem("order")) : [];
-    let products = localStorage.getItem("products") ? JSON.parse(localStorage.getItem("products")) : []; 
-    let orderDetails = localStorage.getItem("orderDetails") ? JSON.parse(localStorage.getItem("orderDetails")) : []; 
+    let products = localStorage.getItem("products") ? JSON.parse(localStorage.getItem("products")) : [];
+    let orderDetails = localStorage.getItem("orderDetails") ? JSON.parse(localStorage.getItem("orderDetails")) : [];
     let result = [];
     orderDetails.forEach(item => {
         // Lấy thông tin sản phẩm
@@ -573,7 +567,7 @@ function createObj() {
     return result;
 }
 
-// Filter 
+// Filter
 function thongKe(mode) {
     let categoryTk = document.getElementById("the-loai-tk").value;
     let ct = document.getElementById("form-search-tk").value;
@@ -605,7 +599,7 @@ function thongKe(mode) {
             return (new Date(item.time) > new Date(timeStart).setHours(0, 0, 0) && new Date(item.time) < new Date(timeEnd).setHours(23, 59, 59)
             );
         });
-    }    
+    }
     showThongKe(result,mode);
 }
 
@@ -645,13 +639,13 @@ function showThongKe(arr,mode) {
         <td>${mergeObj[i].quantity}</td>
         <td>${vnd(mergeObj[i].doanhthu)}</td>
         <td><button class="btn-detail product-order-detail" data-id="${mergeObj[i].id}"><i class="fa-regular fa-eye"></i> Chi tiết</button></td>
-        </tr>      
+        </tr>
         `;
     }
     document.getElementById("showTk").innerHTML = orderHtml;
     document.querySelectorAll(".product-order-detail").forEach(item => {
         let idProduct = item.getAttribute("data-id");
-        item.addEventListener("click", () => {           
+        item.addEventListener("click", () => {
             detailOrderProduct(arr,idProduct);
         })
     })
@@ -672,7 +666,7 @@ function mergeObjThongKe(arr) {
             newItem.doanhthu = newItem.price * newItem.quantity;
             result.push(newItem);
         }
-        
+
     });
     return result;
 }
@@ -686,7 +680,7 @@ function detailOrderProduct(arr,id) {
             <td>${item.quantity}</td>
             <td>${vnd(item.price)}</td>
             <td>${formatDate(item.time)}</td>
-            </tr>      
+            </tr>
             `;
         }
     });
@@ -716,6 +710,8 @@ function signUpFormReset() {
     document.getElementById('fullname').value = ""
     document.getElementById('phone').value = ""
     document.getElementById('password').value = ""
+    document.getElementById('email').value = ""
+    document.getElementById('address').value = ""
     document.querySelector('.form-message-name').innerHTML = '';
     document.querySelector('.form-message-phone').innerHTML = '';
     document.querySelector('.form-message-password').innerHTML = '';
@@ -732,6 +728,8 @@ function showUserArr(arr) {
             <td>${index + 1}</td>
             <td>${account.fullname}</td>
             <td>${account.phone}</td>
+            <td>${account.address}</td>
+            <td>${account.email}</td>
             <td>${formatDate(account.join)}</td>
             <td>${tinhtrang}</td>
             <td class="control control-table">
@@ -744,51 +742,45 @@ function showUserArr(arr) {
     document.getElementById('show-user').innerHTML = accountHtml;
 }
 
-function showUser() {
-    let tinhTrang = parseInt(document.getElementById("tinh-trang-user").value);
-    let ct = document.getElementById("form-search-user").value;
-    let timeStart = document.getElementById("time-start-user").value;
-    let timeEnd = document.getElementById("time-end-user").value;
-
-    if (timeEnd < timeStart && timeEnd != "" && timeStart != "") {
-        alert("Lựa chọn thời gian sai !");
-        return;
-    }
-
-    let accounts = localStorage.getItem("accounts") ? JSON.parse(localStorage.getItem("accounts")).filter(item => item.userType == 0) : [];
-    let result = tinhTrang == 2 ? accounts : accounts.filter(item => item.status == tinhTrang);
-
-    result = ct == "" ? result : result.filter((item) => {
-        return (item.fullname.toLowerCase().includes(ct.toLowerCase()) || item.phone.toString().toLowerCase().includes(ct.toLowerCase()));
-    });
-
-    if (timeStart != "" && timeEnd == "") {
-        result = result.filter((item) => {
-            return new Date(item.join) >= new Date(timeStart).setHours(0, 0, 0);
-        });
-    } else if (timeStart == "" && timeEnd != "") {
-        result = result.filter((item) => {
-            return new Date(item.join) <= new Date(timeEnd).setHours(23, 59, 59);
-        });
-    } else if (timeStart != "" && timeEnd != "") {
-        result = result.filter((item) => {
-            return (new Date(item.join) >= new Date(timeStart).setHours(0, 0, 0) && new Date(item.join) <= new Date(timeEnd).setHours(23, 59, 59)
-            );
-        });
-    }
-    showUserArr(result);
+async function showUser() {
+    try {
+        const response = await fetch('/api/admin/khach-hang');
+        const data = await response.json();
+        let accountHtml = '';
+        if (data.length === 0) {
+            accountHtml = `<tr><td colspan="6">Không có dữ liệu khách hàng</td></tr>`;
+        } else {
+            data.forEach((account, index) => {
+                let tinhtrang = account.status === false ? `<span class="status-no-complete">Bị khóa</span>` : `<span class="status-complete">Hoạt động</span>`;
+                accountHtml += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${account.fullName}</td>
+                    <td>${account.phone}</td>
+                    <td>${formatDate(account.createdAt)}</td>
+                    <td>${account.address}</td>
+                    <td>${account.email}</td>
+                    <td>${tinhtrang}</td>
+                    <td class="control control-table">
+                        <button class="btn-edit" onclick="editAccount(${account.id})"><i class="fa-light fa-pen-to-square"></i></button>
+                        <button class="btn-delete" onclick="deleteAccount(${account.id})"><i class="fa-regular fa-trash"></i></button>
+                    </td>
+                </tr>`;
+            });
+        }
+        document.getElementById('show-user').innerHTML = accountHtml;
+    } catch (error) { console.error("Lỗi API:", error); }
 }
 
 function cancelSearchUser() {
-    let accounts = localStorage.getItem("accounts") ? JSON.parse(localStorage.getItem("accounts")).filter(item => item.userType == 0) : [];
-    showUserArr(accounts);
     document.getElementById("tinh-trang-user").value = 2;
     document.getElementById("form-search-user").value = "";
     document.getElementById("time-start-user").value = "";
     document.getElementById("time-end-user").value = "";
+
+    showUser();
 }
 
-window.onload = showUser();
 
 function deleteAcount(phone) {
     let accounts = JSON.parse(localStorage.getItem('accounts'));
@@ -841,71 +833,231 @@ updateAccount.addEventListener("click", (e) => {
     }
 })
 
-addAccount.addEventListener("click", (e) => {
-    e.preventDefault();
-    let fullNameUser = document.getElementById('fullname').value;
-    let phoneUser = document.getElementById('phone').value;
-    let passwordUser = document.getElementById('password').value;
-        // Check validate
-        let fullNameIP = document.getElementById('fullname');
-        let formMessageName = document.querySelector('.form-message-name');
-        let formMessagePhone = document.querySelector('.form-message-phone');
-        let formMessagePassword = document.querySelector('.form-message-password');
-    
-        if (fullNameUser.length == 0) {
-            formMessageName.innerHTML = 'Vui lòng nhập họ vâ tên';
-            fullNameIP.focus();
-        } else if (fullNameUser.length < 3) {
-            fullNameIP.value = '';
-            formMessageName.innerHTML = 'Vui lòng nhập họ và tên lớn hơn 3 kí tự';
-        }
-        
-        if (phoneUser.length == 0) {
-            formMessagePhone.innerHTML = 'Vui lòng nhập vào số điện thoại';
-        } else if (phoneUser.length != 10) {
-            formMessagePhone.innerHTML = 'Vui lòng nhập vào số điện thoại 10 số';
-            document.getElementById('phone').value = '';
-        }
-        
-        if (passwordUser.length == 0) {
-            formMessagePassword.innerHTML = 'Vui lòng nhập mật khẩu';
-        } else if (passwordUser.length < 6) {
-            formMessagePassword.innerHTML = 'Vui lòng nhập mật khẩu lớn hơn 6 kí tự';
-            document.getElementById('password').value = '';
+// Them khach hang
+const signupBtn = document.getElementById('signup-button');
+
+if (signupBtn) {
+    signupBtn.onclick = async function (e) {
+        e.preventDefault();
+
+        const nameVal = document.getElementById('fullname').value;
+        const phoneVal = document.getElementById('phone').value;
+        const passVal = document.getElementById('password').value;
+        const emailVal = document.getElementById('email').value;
+        const addressVal = document.getElementById('address').value;
+
+        if (!nameVal || !phoneVal || !passVal) {
+            alert("Vui lòng nhập đầy đủ thông tin!");
+            return;
         }
 
-    if (fullNameUser && phoneUser && passwordUser) {
-        let user = {
-            fullname: fullNameUser,
-            phone: phoneUser,
-            password: passwordUser,
-            address: '',
-            email: '',
-            status: 1,
-            join: new Date(),
-            cart: [],
-            userType: 0
+        const userData = {
+            fullName: nameVal,
+            phone: phoneVal,
+            password: passVal,
+            email: emailVal,
+            address: addressVal
+        };
+
+        try {
+            const response = await fetch('/api/admin/khach-hang', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(userData)
+            });
+
+            if (response.ok) {
+                alert("Thêm khách hàng thành công!");
+
+                await showUser();
+                await updateDashboardStats();
+
+                document.querySelector(".signup").classList.remove("open");
+                signUpFormReset();
+            } else {
+                const errorText = await response.text();
+                alert("Lỗi: " + errorText);
+            }
+        } catch (error) {
+            console.error("Lỗi kết nối API:", error);
         }
-        console.log(user);
-        let accounts = localStorage.getItem('accounts') ? JSON.parse(localStorage.getItem('accounts')) : [];
-        let checkloop = accounts.some(account => {
-            return account.phone == user.phone;
-        })
-        if (!checkloop) {
-            accounts.push(user);
-            localStorage.setItem('accounts', JSON.stringify(accounts));
-            toast({ title: 'Thành công', message: 'Tạo thành công tài khoản !', type: 'success', duration: 3000 });
-            document.querySelector(".signup").classList.remove("open");
-            showUser();
-            signUpFormReset();
-        } else {
-            toast({ title: 'Cảnh báo !', message: 'Tài khoản đã tồn tại !', type: 'error', duration: 3000 });
-        }
-    }
-})
+    };
+}
 
 document.getElementById("logout-acc").addEventListener('click', (e) => {
     e.preventDefault();
     localStorage.removeItem("currentuser");
     window.location = "/";
 })
+
+// API lay danh sach khach hang
+function loadCustomersFromApi() {
+    fetch('/api/admin/khach-hang')
+        .then(response => response.json())
+        .then(data => {
+            let html = '';
+            data.forEach((user, index) => {
+                html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${user.fullName}</td>
+                        <td>${user.phone}</td>
+                        <td>${new Date(user.createdAt).toLocaleDateString('vi-VN')}</td>
+                        <td>${account.address}</td>
+                        <td>${account.email}</td>
+                        <td>
+                            <span class="status ${user.status === true ? 'active' : 'locked'}">
+                                ${user.status === true ? 'Hoạt động' : 'Bị khóa'}
+                            </span>
+                        </td>
+                        <td>
+                            <button onclick="editUser(${user.id})"><i class="fa-light fa-pen-to-square"></i></button>
+                            <button onclick="deleteUser(${user.id})"><i class="fa-light fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+            document.getElementById('show-user').innerHTML = html;
+        })
+        .catch(error => console.error('Lỗi kết nối API:', error));
+}
+
+// Goi ham khi trang web vua load xong
+document.addEventListener('DOMContentLoaded', loadCustomersFromApi);
+
+async function updateDashboardStats() {
+    try {
+        // Lấy danh sách user từ DB để đếm số lượng
+        const response = await fetch('/api/admin/khach-hang');
+        const users = await response.json();
+
+        // Cập nhật con số lên giao diện (Đảm bảo ID 'amount-user' có trong HTML)
+        const amountUserEl = document.getElementById("amount-user");
+        if(amountUserEl) {
+            amountUserEl.innerHTML = users.length;
+        }
+
+        // Các phần này nếu bạn chưa làm API thì lấy tạm từ localStorage để không bị lỗi
+        let products = localStorage.getItem("products") ? JSON.parse(localStorage.getItem("products")) : [];
+        let orders = localStorage.getItem("order") ? JSON.parse(localStorage.getItem("order")) : [];
+
+        let tongtien = 0;
+        orders.forEach(item => {
+            if(item.tongtien) tongtien += item.tongtien;
+        });
+
+        if(document.getElementById("amount-product"))
+            document.getElementById("amount-product").innerHTML = products.length;
+
+        if(document.getElementById("doanh-thu"))
+            document.getElementById("doanh-thu").innerHTML = vnd(tongtien);
+
+    } catch (error) {
+        console.error("Lỗi cập nhật số liệu Dashboard:", error);
+    }
+}
+
+async function deleteAccount(id) {
+    if (confirm("Bạn có chắc chắn muốn xóa vĩnh viễn người dùng này?")) {
+        try {
+            const response = await fetch(`/api/admin/khach-hang/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                alert("Đã xóa người dùng thành công!");
+                // Gọi lại hàm load danh sách để cập nhật bảng mà không cần F5
+                showUser();
+            } else {
+                const errorMsg = await response.text();
+                alert("Xóa thất bại: " + errorMsg);
+            }
+        } catch (error) {
+            console.error("Lỗi khi gọi API xóa:", error);
+            alert("Không thể kết nối đến máy chủ!");
+        }
+    }
+}
+
+function renderUserTable(data) {
+    let html = '';
+    if (data.length === 0) {
+        html = `<tr><td colspan="8">Không tìm thấy khách hàng nào phù hợp</td></tr>`;
+    } else {
+        data.forEach((user, index) => {
+            let statusText = user.status === true ? "Hoạt động" : "Bị khóa";
+            let statusClass = user.status === true ? "status-complete" : "status-no-complete";
+
+            html += `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${user.fullName}</td>
+                <td>${user.phone}</td>
+                <td>${formatDate(user.createdAt)}</td>
+                <td>${user.address || ''}</td>
+                <td>${user.email || ''}</td>
+                <td><span class="${statusClass}">${statusText}</span></td>
+                <td class="control control-table">
+                    <button class="btn-edit" onclick="editAccount(${user.id})"><i class="fa-light fa-pen-to-square"></i></button>
+                    <button class="btn-delete" onclick="deleteAccount(${user.id})"><i class="fa-regular fa-trash"></i></button>
+                </td>
+            </tr>`;
+        });
+    }
+    document.getElementById('show-user').innerHTML = html;
+}
+
+async function filterUser() {
+    const search = document.getElementById("form-search-user").value;
+    const status = document.getElementById("tinh-trang-user").value;
+    const start = document.getElementById("time-start-user").value;
+    const end = document.getElementById("time-end-user").value;
+
+    let url = `/api/admin/khach-hang/filter?search=${encodeURIComponent(search)}`;
+
+    if (status !== "2") url += `&status=${status}`;
+    if (start) url += `&startDate=${start}T00:00:00`;
+    if (end) url += `&endDate=${end}T23:59:59`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        renderUserTable(data);
+    } catch (error) {
+        console.error("Lỗi lọc khách hàng:", error);
+    }
+}
+
+function setupUserFilters() {
+    const searchInput = document.getElementById("form-search-user");
+    const statusSelect = document.getElementById("tinh-trang-user");
+    const dateStart = document.getElementById("time-start-user");
+    const dateEnd = document.getElementById("time-end-user");
+    const btnReset = document.querySelector(".btn-refresh-user");
+
+    if(searchInput) searchInput.oninput = filterUser;
+    if(statusSelect) statusSelect.onchange = filterUser;
+    if(dateStart) dateStart.onchange = filterUser;
+    if(dateEnd) dateEnd.onchange = filterUser;
+
+    if(btnReset) {
+        btnReset.onclick = () => {
+            searchInput.value = "";
+            statusSelect.value = "2";
+            dateStart.value = "";
+            dateEnd.value = "";
+            showUser();
+        };
+    }
+}
+
+window.onload = function() {
+    checkLogin();
+    showUser();
+    updateDashboardStats();
+    setupUserFilters();
+    if (typeof showProduct === "function") showProduct();
+};

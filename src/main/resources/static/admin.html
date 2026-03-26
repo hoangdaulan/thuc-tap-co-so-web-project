@@ -162,50 +162,54 @@
             <div class="section">
                 <div class="admin-control">
                     <div class="admin-control-left">
-                        <select name="tinh-trang-user" id="tinh-trang-user" onchange="showUser()">
+                        <select name="tinh-trang-user" id="tinh-trang-user" onchange="loadCustomersFromApi()">
                             <option value="2">Tất cả</option>
                             <option value="1">Hoạt động</option>
                             <option value="0">Bị khóa</option>
                         </select>
                     </div>
                     <div class="admin-control-center">
-                        <form action="" class="form-search">
+                        <form action="" class="form-search" onsubmit="event.preventDefault(); searchCustomer();">
                             <span class="search-btn"><i class="fa-light fa-magnifying-glass"></i></span>
-                            <input id="form-search-user" type="text" class="form-search-input" placeholder="Tìm kiếm khách hàng..." oninput="showUser()">
+                            <input id="form-search-user" type="text" class="form-search-input" placeholder="Tìm kiếm khách hàng..." oninput="searchCustomer()">
                         </form>
                     </div>
                     <div class="admin-control-right">
                         <form action="" class="fillter-date">
                             <div>
                                 <label for="time-start">Từ</label>
-                                <input type="date" class="form-control-date" id="time-start-user" onchange="showUser()">
+                                <input type="date" class="form-control-date" id="time-start-user">
                             </div>
                             <div>
                                 <label for="time-end">Đến</label>
-                                <input type="date" class="form-control-date" id="time-end-user" onchange="showUser()">
+                                <input type="date" class="form-control-date" id="time-end-user">
                             </div>
-                        </form>      
-                        <button class="btn-reset-order" onclick="cancelSearchUser()"><i class="fa-light fa-arrow-rotate-right"></i></button>     
-                        <button id="btn-add-user" class="btn-control-large" onclick="openCreateAccount()"><i class="fa-light fa-plus"></i> <span>Thêm khách hàng</span></button>          
+                        </form>
+                        <button class="btn-reset-order" onclick="cancelSearchUser()"><i class="fa-light fa-arrow-rotate-right"></i></button>
+                        <button id="btn-add-user" class="btn-control-large" onclick="openCreateAccount()"><i class="fa-light fa-plus"></i> <span>Thêm khách hàng</span></button>
                     </div>
                 </div>
                 <div class="table">
                     <table width="100%">
                         <thead>
-                            <tr>
-                                <td>STT</td>
-                                <td>Họ và tên</td>
-                                <td>Liên hệ</td>
-                                <td>Ngày tham gia</td>
-                                <td>Tình trạng</td>
-                                <td></td>
-                            </tr>
+                        <tr>
+                            <td>STT</td>
+                            <td>Họ và tên</td>
+                            <td>Liên hệ (SĐT)</td>
+                            <td>Ngày tham gia</td>
+                            <td>Địa chỉ</td>
+                            <td>Email</td>
+                            <td>Tình trạng</td>
+                            <td>Thao tác</td>
+                        </tr>
                         </thead>
                         <tbody id="show-user">
+                        <tr>
+                            <td colspan="6" style="text-align:center;">Đang tải dữ liệu...</td>
+                        </tr>
                         </tbody>
                     </table>
                 </div>
-                <!-- </div> -->
             </div>
             <!-- Order  -->
             <div class="section">
@@ -447,7 +451,17 @@
                         <label for="password" class="form-label">Mật khẩu</label>
                         <input id="password" name="password" type="text" placeholder="Nhập mật khẩu" class="form-control">
                         <span class="form-message-password form-message"></span>
-                    </div>   
+                    </div>
+                    <div class="form-group">
+                        <label for="address" class="form-label">Địa chỉ</label>
+                        <input id="address" name="address" type="text" placeholder="Nhập địa chỉ" class="form-control">"
+                        <span class="form-message-address form-message"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email</label>
+                        <input id="email" name="email" type="text" placeholder="Nhập email" class="form-control">
+                        <span class="form-message-email form-message"></span>
+                    </div>
                     <div class="form-group edit-account-e">
                         <label for="" class="form-label">Trạng thái</label>
                         <input type="checkbox" id="user-status" class="switch-input">
