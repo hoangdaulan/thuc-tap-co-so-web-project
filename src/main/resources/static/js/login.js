@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const passwordConfirmInput = signupForm.querySelector("#password_confirmation");
 
             if (passwordInput.value !== passwordConfirmInput.value) {
-                alert("Mật khẩu và Nhập lại mật khẩu không khớp!");
+                toast({ title: 'Error', message: 'Mật khẩu và Nhập lại mật khẩu không khớp!', type: 'error', duration: 3000 });
                 return;
             }
 
@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", function () {
             })
                 .then(response => {
                     if (response.ok) {
-                        alert("Đăng ký thành công!");
+                        toast({ title: 'Success', message: 'Đăng ký thành công !', type: 'success', duration: 3000 });
                         signupForm.reset();
                         // Đóng modal
                         const modal = document.querySelector(".modal.signup-login");
@@ -48,7 +48,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 })
                 .catch(error => {
                     console.error("Lỗi đăng ký:", error);
-                    alert(error.message);
+                    toast({ title: 'Error', message: error.message, type: 'error', duration: 3000 });
                 });
         });
     }
@@ -96,7 +96,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         }
 
                         // Có thể sử dụng hàm toast() nếu có trong hệ thống, ở đây dùng alert
-                        alert("Đăng nhập thành công!");
+                        toast({ title: 'Success', message: 'Đăng nhập thành công !', type: 'success', duration: 3000 });
 
                         // Đóng modal đăng nhập
                         const modal = document.querySelector(".modal.signup-login");
@@ -114,7 +114,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         messageSpan.innerText = error.message;
                         messageSpan.style.color = "red";
                     } else {
-                        alert(error.message);
+                        toast({ title: 'Error', message: error.message, type: 'error', duration: 3000 });
                     }
                 });
         });
