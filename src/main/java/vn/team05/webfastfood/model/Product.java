@@ -29,6 +29,17 @@ public class Product extends BaseEntity {
     @Column(name = "status")
     private Integer status = 1; // 1: Active, 0: Deleted
 
+    @Column(name = "discount")
+    private Integer discount = 0;
+
+    public Integer getDiscount() {
+        return discount;
+    }
+
+    public void setDiscount(Integer discount) {
+        this.discount = discount;
+    }
+
     public Long getId() {
         return id;
     }
@@ -85,4 +96,3 @@ public class Product extends BaseEntity {
         this.status = status;
     }
 }
-
