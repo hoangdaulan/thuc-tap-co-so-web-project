@@ -820,7 +820,10 @@ function renderProducts(showProduct) {
 }
 
 // Find Product
-var productAll = JSON.parse(localStorage.getItem('products')).filter(item => item.status == 1);
+var productAll = [];
+if (localStorage.getItem('products') != null) {
+    productAll = JSON.parse(localStorage.getItem('products')).filter(item => item.status == 1);
+}
 function searchProducts(mode) {
     let valeSearchInput = document.querySelector('.form-search-input').value;
     let valueCategory = document.getElementById("advanced-search-category-select").value;
@@ -878,13 +881,47 @@ function displayList(productAll, perPage, currentPage) {
     renderProducts(productShow);
 }
 
-function showHomeProduct(products) {
-    let productAll = products.filter(item => item.status == 1)
-    displayList(productAll, perPage, currentPage);
-    setupPagination(productAll, perPage, currentPage);
+async function showHomeProduct(products) {
+    // Nếu không truyền mảng sản phẩm, mặc định sẽ Fetch móc thẳng từ API ra
+    if (!products) {
+        try {
+            let response = await fetch('http://localhost:8080/api/v1/products');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            let apiData = await response.json();
+            
+            products = apiData.map(p => {
+                return {
+                    id: p.id,
+                    status: p.status,
+                    title: p.title,
+                    img: p.image && (p.image.includes('http') || p.image.includes('assets')) ? p.image : `./assets/img/products/${p.image}`,
+                    category: p.categoryName || '',
+                    price: p.price,
+                    desc: p.description || ''
+                };
+            });
+            
+            // Lưu đè lại vào localstorage để các hàm khác (giỏ hàng, mua hàng...) dùng
+            localStorage.setItem('products', JSON.stringify(products));
+        } catch (error) {
+            console.error("Lỗi khi fetch data từ API:", error);
+            products = JSON.parse(localStorage.getItem('products')) || [];
+        }
+        
+        // Cập nhật lại mảng danh sách cho chức năng tìm kiếm
+        productAll = products.filter(item => item.status == 1);
+    }
+    
+    let activeProducts = products.filter(item => item.status == 1);
+    displayList(activeProducts, perPage, currentPage);
+    setupPagination(activeProducts, perPage, currentPage);
 }
 
-window.onload = showHomeProduct(JSON.parse(localStorage.getItem('products')))
+window.onload = () => {
+    showHomeProduct();
+}
 
 function setupPagination(productAll, perPage) {
     document.querySelector('.page-nav-list').innerHTML = '';
