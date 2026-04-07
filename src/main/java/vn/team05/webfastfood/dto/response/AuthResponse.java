@@ -1,4 +1,4 @@
-package vn.team05.webfastfood.dto;
+package vn.team05.webfastfood.dto.response;
 
 import java.util.Map;
 
