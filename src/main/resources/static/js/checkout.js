@@ -241,57 +241,73 @@ function xulyDathang(product) {
         thoigiangiao = document.querySelector(".choise-time").value;
     }
 
-    let orderDetails = localStorage.getItem("orderDetails") ? JSON.parse(localStorage.getItem("orderDetails")) : [];
-    let order = localStorage.getItem("order") ? JSON.parse(localStorage.getItem("order")) : [];
-    let madon = createId(order);
-    let tongtien = 0;
-    if(product == undefined) {
-        currentUser.cart.forEach(item => {
-            item.madon = madon;
-            item.price = getpriceProduct(item.id);
-            tongtien += item.price * item.soluong;
-            orderDetails.push(item);
-        });
-    } else {
-        product.madon = madon;
-        product.price = getpriceProduct(product.id);
-        tongtien += product.price * product.soluong;
-        orderDetails.push(product);
-    }   
-    
     let tennguoinhan = document.querySelector("#tennguoinhan").value;
     let sdtnhan = document.querySelector("#sdtnhan").value
 
     if(tennguoinhan == "" || sdtnhan == "" || diachinhan == "") {
         toast({ title: 'Chú ý', message: 'Vui lòng nhập đầy đủ thông tin !', type: 'warning', duration: 4000 });
     } else {
-        let donhang = {
-            id: madon,
-            khachhang: currentUser.phone,
-            hinhthucgiao: hinhthucgiao,
-            ngaygiaohang: document.querySelector(".pick-date.active").getAttribute("data-date"),
-            thoigiangiao: thoigiangiao,
-            ghichu: document.querySelector(".note-order").value,
-            tenguoinhan: tennguoinhan,
-            sdtnhan: sdtnhan,
-            diachinhan: diachinhan,
-            thoigiandat: new Date(),
-            tongtien:tongtien,
-            trangthai: 0
+        let items = [];
+        if(product == undefined) {
+             currentUser.cart.forEach(item => {
+                 items.push({
+                     productId: item.id,
+                     quantity: item.soluong,
+                     note: item.note || ""
+                 });
+             });
+        } else {
+             items.push({
+                 productId: product.id,
+                 quantity: product.soluong,
+                 note: product.note || ""
+             });
         }
-    
-        order.unshift(donhang);
-        if(product == null) {
-            currentUser.cart.length = 0;
+        
+        let requestBody = {
+             note: document.querySelector(".note-order").value,
+             paymentMethod: "cod", 
+             shippingDate: document.querySelector(".pick-date.active").getAttribute("data-date"),
+             customerName: tennguoinhan,
+             customerPhone: sdtnhan,
+             address: diachinhan,
+             items: items
+        };
+
+        const token = localStorage.getItem("jwtToken");
+        if (!token) {
+            toast({ title: 'Lỗi', message: 'Vui lòng đăng nhập lại!', type: 'error', duration: 3000 });
+            return;
         }
-    
-        localStorage.setItem("order",JSON.stringify(order));
-        localStorage.setItem("currentuser",JSON.stringify(currentUser));
-        localStorage.setItem("orderDetails",JSON.stringify(orderDetails));
-        toast({ title: 'Thành công', message: 'Đặt hàng thành công !', type: 'success', duration: 1000 });
-        setTimeout((e)=>{
-            window.location = "/";
-        },2000);  
+
+        fetch('/api/v1/orders', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(requestBody)
+        })
+        .then(res => {
+            if(!res.ok) {
+                return res.text().then(text => { throw new Error(text) })
+            }
+            return res.json();
+        })
+        .then(data => {
+            // Xóa cart sau khi đặt hàng thành công (nếu mua từ cart)
+            if(product == null) {
+                currentUser.cart.length = 0;
+            }
+            localStorage.setItem("currentuser",JSON.stringify(currentUser));
+            toast({ title: 'Thành công', message: 'Đặt hàng thành công !', type: 'success', duration: 1000 });
+            setTimeout((e)=>{
+                window.location = "/";
+            },2000);  
+        })
+        .catch(err => {
+             toast({ title: 'Lỗi', message: err.message || 'Đặt hàng thất bại!', type: 'error', duration: 3000 });
+        });
     }
 }
 

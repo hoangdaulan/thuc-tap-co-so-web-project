@@ -75,4 +75,3 @@ public class OrderItem extends BaseEntity {
         this.note = note;
     }
 }
-
