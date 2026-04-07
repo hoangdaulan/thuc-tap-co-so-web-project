@@ -42,8 +42,8 @@ public class AdminProductController {
     /**
      * POST /api/v1/admin/products
      * Nhận multipart/form-data gồm:
-     *   - title, description, price, categoryId, status (text fields)
-     *   - image (file)
+     * - title, description, price, categoryId, status (text fields)
+     * - image (file)
      * Lưu ảnh vào thư mục static, lưu product vào DB.
      */
     @PostMapping(consumes = "multipart/form-data")
@@ -53,8 +53,7 @@ public class AdminProductController {
             @RequestParam("price") Double price,
             @RequestParam("categoryId") Long categoryId,
             @RequestParam(value = "status", defaultValue = "1") Integer status,
-            @RequestParam(value = "image", required = false) MultipartFile imageFile
-    ) {
+            @RequestParam(value = "image", required = false) MultipartFile imageFile) {
         try {
             String imageName = "blank-image.png"; // ảnh mặc định nếu không upload
 
