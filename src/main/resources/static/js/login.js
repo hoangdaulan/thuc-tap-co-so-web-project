@@ -29,22 +29,23 @@ document.addEventListener("DOMContentLoaded", function () {
                 },
                 body: JSON.stringify(registerData)
             })
-                .then(response => {
-                    if (response.ok) {
-                        toast({ title: 'Success', message: 'Đăng ký thành công !', type: 'success', duration: 3000 });
-                        signupForm.reset();
-                        // Đóng modal
-                        const modal = document.querySelector(".modal.signup-login");
-                        if (modal) {
-                            modal.classList.remove("open");
-                        }
-                        // Tuỳ chọn: redirect hoặc cho phép user đăng nhập tiếp, ở đây ta có thể refresh hoặc đóng popup
-                        window.location.reload();
-                    } else if (response.status === 400) {
-                        throw new Error("Số điện thoại đã tồn tại!");
-                    } else {
-                        throw new Error("Đăng ký thất bại!");
+                .then(async response => {
+                    const payload = await response.json().catch(() => ({}));
+                    if (!response.ok) {
+                        throw new Error(payload.message || "Đăng ký thất bại!");
                     }
+
+                    toast({ title: 'Success', message: payload.message || 'Đăng ký thành công !', type: 'success', duration: 3000 });
+                    signupForm.reset();
+
+                    // Đóng modal
+                    const modal = document.querySelector(".modal.signup-login");
+                    if (modal) {
+                        modal.classList.remove("open");
+                    }
+
+                    // Tuỳ chọn: reload hoặc cho phép người dùng đăng nhập tiếp
+                    window.location.reload();
                 })
                 .catch(error => {
                     console.error("Lỗi đăng ký:", error);
@@ -78,25 +79,24 @@ document.addEventListener("DOMContentLoaded", function () {
                 },
                 body: JSON.stringify(loginData)
             })
-                .then(response => {
-                    if (response.ok) {
-                        return response.json();
-                    } else if (response.status === 401 || response.status === 403) {
-                        throw new Error("Tên đăng nhập hoặc mật khẩu không chính xác!");
-                    } else {
-                        throw new Error("Lỗi máy chủ! Vui lòng thử lại sau.");
+                .then(async response => {
+                    const payload = await response.json().catch(() => ({}));
+                    if (!response.ok) {
+                        throw new Error(payload.message || "Lỗi máy chủ! Vui lòng thử lại sau.");
                     }
+                    return payload;
                 })
-                .then(data => {
+                .then(payload => {
+                    const authData = payload && payload.data ? payload.data : null;
+
                     // Lưu JWT token vào localStorage nếu đăng nhập thành công
-                    if (data && data.token) {
-                        localStorage.setItem("jwtToken", data.token);
-                        if (data.user) {
-                            localStorage.setItem("currentuser", JSON.stringify(data.user));
+                    if (authData && authData.token) {
+                        localStorage.setItem("jwtToken", authData.token);
+                        if (authData.user) {
+                            localStorage.setItem("currentuser", JSON.stringify(authData.user));
                         }
 
-                        // Có thể sử dụng hàm toast() nếu có trong hệ thống, ở đây dùng alert
-                        toast({ title: 'Success', message: 'Đăng nhập thành công !', type: 'success', duration: 3000 });
+                        toast({ title: 'Success', message: payload.message || 'Đăng nhập thành công !', type: 'success', duration: 3000 });
 
                         // Đóng modal đăng nhập
                         const modal = document.querySelector(".modal.signup-login");
