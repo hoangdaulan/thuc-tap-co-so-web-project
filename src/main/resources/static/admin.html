@@ -362,10 +362,14 @@
             <div class="modal-content">
                 <form class="add-product-form" enctype="multipart/form-data">
                     <div class="modal-content-left">
-                        <img src="./assets/img/blank-image.png" alt="Ảnh món ăn" class="upload-image-preview" id="product-image-preview">
+                        <img src="./assets/img/blank-image.png" alt="Ảnh món ăn" class="upload-image-preview"
+                            id="product-image-preview">
                         <div class="form-group file">
-                            <label for="up-hinh-anh" class="form-label-file"><i class="fa-regular fa-cloud-arrow-up"></i>Chọn hình ảnh</label>
-                            <input accept="image/jpeg, image/png, image/jpg, image/webp" id="up-hinh-anh" name="up-hinh-anh" type="file" class="form-control" onchange="previewProductImage(this)">
+                            <label for="up-hinh-anh" class="form-label-file"><i
+                                    class="fa-regular fa-cloud-arrow-up"></i>Chọn hình ảnh</label>
+                            <input accept="image/jpeg, image/png, image/jpg, image/webp" id="up-hinh-anh"
+                                name="up-hinh-anh" type="file" class="form-control"
+                                onchange="previewProductImage(this)">
                         </div>
                     </div>
                     <div class="modal-content-right">
@@ -378,10 +382,12 @@
                         <div class="form-group">
                             <label for="chon-mon" class="form-label">Danh mục</label>
                             <select name="categoryId" id="chon-mon">
-                                <option value="1">Món chính</option>
-                                <option value="2">Món ăn vặt</option>
-                                <option value="3">Món tráng miệng</option>
-                                <option value="4">Nước uống</option>
+                                <option value="1">Combo 1 người</option>
+                                <option value="2">Combo nhóm</option>
+                                <option value="3">Gà rán - gà quay</option>
+                                <option value="4">Burger - Cơm - Mì ý</option>
+                                <option value="5">Thức ăn nhẹ</option>
+                                <option value="6">Thức uống & tráng miệng</option>
                             </select>
                             <span class="form-message"></span>
                         </div>
@@ -396,11 +402,13 @@
                             <textarea class="product-desc" id="mo-ta" placeholder="Nhập mô tả món ăn..."></textarea>
                             <span class="form-message"></span>
                         </div>
-                        <button type="button" class="form-submit btn-add-product-form add-product-e" id="add-product-button">
+                        <button type="button" class="form-submit btn-add-product-form add-product-e"
+                            id="add-product-button">
                             <i class="fa-regular fa-plus"></i>
                             <span>THÊM MÓN</span>
                         </button>
-                        <button type="button" class="form-submit btn-update-product-form edit-product-e" id="update-product-button">
+                        <button type="button" class="form-submit btn-update-product-form edit-product-e"
+                            id="update-product-button">
                             <i class="fa-light fa-pencil"></i>
                             <span>LƯU THAY ĐỔI</span>
                         </button>
