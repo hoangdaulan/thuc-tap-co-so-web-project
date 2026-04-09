@@ -223,9 +223,12 @@
                 <div class="admin-control">
                     <div class="admin-control-left">
                         <select name="tinh-trang" id="tinh-trang" onchange="findOrder()">
-                            <option value="2">Tất cả</option>
-                            <option value="1">Đã xử lý</option>
-                            <option value="0">Chưa xử lý</option>
+                            <option value="-1">Tất cả</option>
+                            <option value="0">Chờ xác nhận</option>
+                            <option value="1">Đã xác nhận</option>
+                            <option value="2">Đang giao</option>
+                            <option value="3">Hoàn thành</option>
+                            <option value="4">Hủy đơn</option>
                         </select>
                     </div>
                     <div class="admin-control-center">

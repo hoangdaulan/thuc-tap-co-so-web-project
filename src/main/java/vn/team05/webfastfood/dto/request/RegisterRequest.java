@@ -1,4 +1,4 @@
-package vn.team05.webfastfood.dto;
+package vn.team05.webfastfood.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

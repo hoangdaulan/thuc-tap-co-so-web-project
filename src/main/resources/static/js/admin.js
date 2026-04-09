@@ -400,18 +400,47 @@ function previewProductImage(input) {
 // Giữ lại hàm cũ để tránh lỗi nếu còn reference
 function uploadImage(el) { previewProductImage(el); }
 
-// Đổi trạng thái đơn hàng
-function changeStatus(id, el) {
-    let orders = JSON.parse(localStorage.getItem("order"));
-    let order = orders.find((item) => {
-        return item.id == id;
-    });
-    order.trangthai = 1;
-    el.classList.remove("btn-chuaxuly");
-    el.classList.add("btn-daxuly");
-    el.innerHTML = "Đã xử lý";
-    localStorage.setItem("order", JSON.stringify(orders));
-    findOrder(orders);
+// Đổi trạng thái đơn hàng qua API
+async function changeStatus(id, newStatus) {
+    try {
+        let token = localStorage.getItem('jwtToken');
+        const response = await fetch(`/api/v1/admin/orders/${id}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token ? `Bearer ${token}` : ''
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+        if (response.ok) {
+            toast({ title: 'Thành công', message: 'Cập nhật trạng thái thành công!', type: 'success', duration: 2000 });
+            await loadOrdersFromApi();
+        } else {
+            let msg = await response.text();
+            toast({ title: 'Lỗi', message: msg, type: 'error', duration: 3000 });
+        }
+    } catch (e) {
+        toast({ title: 'Lỗi', message: 'Không thể kết nối server', type: 'error', duration: 3000 });
+    }
+}
+
+// Cache danh sách đơn hàng từ API
+let allOrdersCache = [];
+
+// Tải đơn hàng từ API
+async function loadOrdersFromApi() {
+    try {
+        let token = localStorage.getItem('jwtToken');
+        const response = await fetch('/api/v1/admin/orders', {
+            headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+        });
+        if (!response.ok) throw new Error('Không thể tải đơn hàng');
+        allOrdersCache = await response.json();
+        findOrder();
+        await updateDashboardStats();
+    } catch (error) {
+        console.error('Lỗi tải đơn hàng:', error);
+    }
 }
 
 // Format Date
@@ -428,21 +457,26 @@ function formatDate(date) {
 // Show order
 function showOrder(arr) {
     let orderHtml = "";
-    if (arr.length == 0) {
-        orderHtml = `<td colspan="6">Không có dữ liệu</td>`
+    if (!arr || arr.length == 0) {
+        orderHtml = `<tr><td colspan="6">Không có dữ liệu</td></tr>`
     } else {
         arr.forEach((item) => {
-            let status = item.trangthai == 0 ? `<span class="status-no-complete">Chưa xử lý</span>` : `<span class="status-complete">Đã xử lý</span>`;
-            let date = formatDate(item.thoigiandat);
+            let statusText = item.statusText || 'Chờ xác nhận';
+            let statusClass = '';
+            if (item.status == 3) statusClass = 'status-complete';
+            else if (item.status == 4) statusClass = 'status-cancelled';
+            else statusClass = 'status-no-complete';
+            let date = formatDate(item.createdAt || new Date());
+            let recipientInfo = item.recipientPhone || item.user?.phone || '';
             orderHtml += `
             <tr>
             <td>${item.id}</td>
-            <td>${item.khachhang}</td>
+            <td>${recipientInfo}</td>
             <td>${date}</td>
-            <td>${vnd(item.tongtien)}</td>
-            <td>${status}</td>
+            <td>${vnd(item.totalPrice || 0)}</td>
+            <td><span class="${statusClass}">${statusText}</span></td>
             <td class="control">
-            <button class="btn-detail" id="" onclick="detailOrder('${item.id}')"><i class="fa-regular fa-eye"></i> Chi tiết</button>
+                <button class="btn-detail" onclick="detailOrderAdmin(${item.id})"><i class="fa-regular fa-eye"></i> Chi tiết</button>
             </td>
             </tr>
             `;
@@ -451,141 +485,140 @@ function showOrder(arr) {
     document.getElementById("showOrder").innerHTML = orderHtml;
 }
 
-// Get Order Details
-function getOrderDetails(madon) {
-    let orderDetails = localStorage.getItem("orderDetails") ?
-        JSON.parse(localStorage.getItem("orderDetails")) : [];
-    let ctDon = [];
-    orderDetails.forEach((item) => {
-        if (item.madon == madon) {
-            ctDon.push(item);
-        }
-    });
-    return ctDon;
-}
-
-// Show Order Detail
-function detailOrder(id) {
+// Xem chi tiết đơn hàng admin
+async function detailOrderAdmin(id) {
+    let token = localStorage.getItem('jwtToken');
+    let order = allOrdersCache.find(o => o.id == id);
+    if (!order) {
+        try {
+            let res = await fetch(`/api/v1/admin/orders?status=`, { headers: { 'Authorization': token ? `Bearer ${token}` : '' } });
+            if (res.ok) { allOrdersCache = await res.json(); order = allOrdersCache.find(o => o.id == id); }
+        } catch (e) { }
+    }
+    if (!order) return;
     document.querySelector(".modal.detail-order").classList.add("open");
-    let orders = localStorage.getItem("order") ? JSON.parse(localStorage.getItem("order")) : [];
-    let products = localStorage.getItem("order") ? JSON.parse(localStorage.getItem("products")) : [];
-    // Lấy hóa đơn
-    let order = orders.find((item) => item.id == id);
-    // Lấy chi tiết hóa đơn
-    let ctDon = getOrderDetails(id);
     let spHtml = `<div class="modal-detail-left"><div class="order-item-group">`;
-
-    ctDon.forEach((item) => {
-        let detaiSP = products.find(product => product.id == item.id);
-        spHtml += `<div class="order-product">
-            <div class="order-product-left">
-                <img src="${detaiSP.img}" alt="">
-                <div class="order-product-info">
-                    <h4>${detaiSP.title}</h4>
-                    <p class="order-product-note"><i class="fa-light fa-pen"></i> ${item.note}</p>
-                    <p class="order-product-quantity">SL: ${item.soluong}<p>
+    if (order.items && order.items.length > 0) {
+        order.items.forEach(item => {
+            let imgSrc = item.productImage || './assets/img/blank-image.png';
+            if (imgSrc && !imgSrc.startsWith('http') && !imgSrc.startsWith('/') && !imgSrc.startsWith('./')) {
+                imgSrc = `./assets/img/products/${imgSrc}`;
+            }
+            spHtml += `<div class="order-product">
+                <div class="order-product-left">
+                    <img src="${imgSrc}" alt="">
+                    <div class="order-product-info">
+                        <h4>${item.productTitle}</h4>
+                        <p class="order-product-note"><i class="fa-light fa-pen"></i> ${item.note || 'Không có ghi chú'}</p>
+                        <p class="order-product-quantity">SL: ${item.quantity}<p>
+                    </div>
                 </div>
-            </div>
-            <div class="order-product-right">
-                <div class="order-product-price">
-                    <span class="order-product-current-price">${vnd(item.price)}</span>
+                <div class="order-product-right">
+                    <div class="order-product-price">
+                        <span class="order-product-current-price">${vnd(item.price)}</span>
+                    </div>
                 </div>
-            </div>
-        </div>`;
-    });
+            </div>`;
+        });
+    }
     spHtml += `</div></div>`;
     spHtml += `<div class="modal-detail-right">
         <ul class="detail-order-group">
             <li class="detail-order-item">
                 <span class="detail-order-item-left"><i class="fa-light fa-calendar-days"></i> Ngày đặt hàng</span>
-                <span class="detail-order-item-right">${formatDate(order.thoigiandat)}</span>
+                <span class="detail-order-item-right">${formatDate(order.createdAt)}</span>
             </li>
             <li class="detail-order-item">
                 <span class="detail-order-item-left"><i class="fa-light fa-truck"></i> Hình thức giao</span>
-                <span class="detail-order-item-right">${order.hinhthucgiao}</span>
+                <span class="detail-order-item-right">${order.deliveryType === 'pickup' ? 'Tự đến lấy' : 'Giao tận nơi'}</span>
             </li>
             <li class="detail-order-item">
-            <span class="detail-order-item-left"><i class="fa-thin fa-person"></i> Người nhận</span>
-            <span class="detail-order-item-right">${order.tenguoinhan}</span>
+                <span class="detail-order-item-left"><i class="fa-thin fa-person"></i> Người nhận</span>
+                <span class="detail-order-item-right">${order.recipientName || ''}</span>
             </li>
             <li class="detail-order-item">
-            <span class="detail-order-item-left"><i class="fa-light fa-phone"></i> Số điện thoại</span>
-            <span class="detail-order-item-right">${order.sdtnhan}</span>
+                <span class="detail-order-item-left"><i class="fa-light fa-phone"></i> Số điện thoại</span>
+                <span class="detail-order-item-right">${order.recipientPhone || ''}</span>
             </li>
             <li class="detail-order-item tb">
                 <span class="detail-order-item-left"><i class="fa-light fa-clock"></i> Thời gian giao</span>
-                <p class="detail-order-item-b">${(order.thoigiangiao == "" ? "" : (order.thoigiangiao + " - ")) + formatDate(order.ngaygiaohang)}</p>
+                <p class="detail-order-item-b">${order.deliveryTime ? order.deliveryTime + ' - ' : ''}${order.shippingDate ? formatDate(order.shippingDate) : ''}</p>
             </li>
             <li class="detail-order-item tb">
                 <span class="detail-order-item-t"><i class="fa-light fa-location-dot"></i> Địa chỉ nhận</span>
-                <p class="detail-order-item-b">${order.diachinhan}</p>
+                <p class="detail-order-item-b">${order.deliveryAddress || order.branch || ''}</p>
             </li>
             <li class="detail-order-item tb">
                 <span class="detail-order-item-t"><i class="fa-light fa-note-sticky"></i> Ghi chú</span>
-                <p class="detail-order-item-b">${order.ghichu}</p>
+                <p class="detail-order-item-b">${order.note || ''}</p>
             </li>
         </ul>
     </div>`;
     document.querySelector(".modal-detail-order").innerHTML = spHtml;
 
-    let classDetailBtn = order.trangthai == 0 ? "btn-chuaxuly" : "btn-daxuly";
-    let textDetailBtn = order.trangthai == 0 ? "Chưa xử lý" : "Đã xử lý";
-    document.querySelector(
-        ".modal-detail-bottom"
-    ).innerHTML = `<div class="modal-detail-bottom-left">
+    // Nút cập nhật trạng thái
+    let statusOptions = [
+        { value: 0, label: 'Chờ xác nhận' },
+        { value: 1, label: 'Đã xác nhận' },
+        { value: 2, label: 'Đang giao' },
+        { value: 3, label: 'Hoàn thành' },
+        { value: 4, label: 'Hủy' }
+    ];
+    let selectHtml = `<select id="order-status-select" class="order-status-select">`;
+    statusOptions.forEach(opt => {
+        selectHtml += `<option value="${opt.value}" ${order.status == opt.value ? 'selected' : ''}>${opt.label}</option>`;
+    });
+    selectHtml += `</select>`;
+    document.querySelector(".modal-detail-bottom").innerHTML = `<div class="modal-detail-bottom-left">
         <div class="price-total">
             <span class="thanhtien">Thành tiền</span>
-            <span class="price">${vnd(order.tongtien)}</span>
+            <span class="price">${vnd(order.totalPrice || 0)}</span>
         </div>
     </div>
     <div class="modal-detail-bottom-right">
-        <button class="modal-detail-btn ${classDetailBtn}" onclick="changeStatus('${order.id}',this)">${textDetailBtn}</button>
+        ${selectHtml}
+        <button class="modal-detail-btn btn-cap-nhat" onclick="changeStatus(${order.id}, parseInt(document.getElementById('order-status-select').value))">Cập nhật</button>
     </div>`;
 }
 
 // Find Order
 function findOrder() {
-    let tinhTrang = parseInt(document.getElementById("tinh-trang").value);
-    let ct = document.getElementById("form-search-order").value;
-    let timeStart = document.getElementById("time-start").value;
-    let timeEnd = document.getElementById("time-end").value;
+    let orders = allOrdersCache.length > 0 ? allOrdersCache : [];
+    let tinhTrang = document.getElementById("tinh-trang") ? parseInt(document.getElementById("tinh-trang").value) : -1;
+    let ct = document.getElementById("form-search-order") ? document.getElementById("form-search-order").value : '';
+    let timeStart = document.getElementById("time-start") ? document.getElementById("time-start").value : '';
+    let timeEnd = document.getElementById("time-end") ? document.getElementById("time-end").value : '';
 
     if (timeEnd < timeStart && timeEnd != "" && timeStart != "") {
         alert("Lựa chọn thời gian sai !");
         return;
     }
-    let orders = localStorage.getItem("order") ? JSON.parse(localStorage.getItem("order")) : [];
-    let result = tinhTrang == 2 ? orders : orders.filter((item) => {
-        return item.trangthai == tinhTrang;
-    });
-    result = ct == "" ? result : result.filter((item) => {
-        return (item.khachhang.toLowerCase().includes(ct.toLowerCase()) || item.id.toString().toLowerCase().includes(ct.toLowerCase()));
+
+    let result = (tinhTrang == -1 || tinhTrang == 5) ? orders : orders.filter(item => item.status == tinhTrang);
+    result = ct == "" ? result : result.filter(item => {
+        let phone = item.recipientPhone || '';
+        return (phone.toLowerCase().includes(ct.toLowerCase()) || String(item.id).includes(ct));
     });
 
     if (timeStart != "" && timeEnd == "") {
-        result = result.filter((item) => {
-            return new Date(item.thoigiandat) >= new Date(timeStart).setHours(0, 0, 0);
-        });
+        result = result.filter(item => new Date(item.createdAt) >= new Date(timeStart).setHours(0, 0, 0));
     } else if (timeStart == "" && timeEnd != "") {
-        result = result.filter((item) => {
-            return new Date(item.thoigiandat) <= new Date(timeEnd).setHours(23, 59, 59);
-        });
+        result = result.filter(item => new Date(item.createdAt) <= new Date(timeEnd).setHours(23, 59, 59));
     } else if (timeStart != "" && timeEnd != "") {
-        result = result.filter((item) => {
-            return (new Date(item.thoigiandat) >= new Date(timeStart).setHours(0, 0, 0) && new Date(item.thoigiandat) <= new Date(timeEnd).setHours(23, 59, 59)
-            );
-        });
+        result = result.filter(item => (
+            new Date(item.createdAt) >= new Date(timeStart).setHours(0, 0, 0) &&
+            new Date(item.createdAt) <= new Date(timeEnd).setHours(23, 59, 59)
+        ));
     }
     showOrder(result);
 }
 
 function cancelSearchOrder() {
-    let orders = localStorage.getItem("order") ? JSON.parse(localStorage.getItem("order")) : [];
-    document.getElementById("tinh-trang").value = 2;
-    document.getElementById("form-search-order").value = "";
-    document.getElementById("time-start").value = "";
-    document.getElementById("time-end").value = "";
-    showOrder(orders);
+    if (document.getElementById("tinh-trang")) document.getElementById("tinh-trang").value = 5;
+    if (document.getElementById("form-search-order")) document.getElementById("form-search-order").value = "";
+    if (document.getElementById("time-start")) document.getElementById("time-start").value = "";
+    if (document.getElementById("time-end")) document.getElementById("time-end").value = "";
+    findOrder();
 }
 
 // Create Object Thong ke
@@ -971,31 +1004,32 @@ document.addEventListener('DOMContentLoaded', loadCustomersFromApi);
 
 async function updateDashboardStats() {
     try {
-        // Lấy danh sách user từ DB để đếm số lượng
-        const response = await fetch('/api/admin/khach-hang');
-        const users = await response.json();
-
-        // Cập nhật con số lên giao diện (Đảm bảo ID 'amount-user' có trong HTML)
-        const amountUserEl = document.getElementById("amount-user");
-        if (amountUserEl) {
-            amountUserEl.innerHTML = users.length;
+        let token = localStorage.getItem('jwtToken');
+        // Lấy user count
+        const userRes = await fetch('/api/admin/khach-hang');
+        if (userRes.ok) {
+            const users = await userRes.json();
+            const amountUserEl = document.getElementById("amount-user");
+            if (amountUserEl) amountUserEl.innerHTML = users.length;
         }
 
-        // Các phần này nếu bạn chưa làm API thì lấy tạm từ localStorage để không bị lỗi
-        let products = localStorage.getItem("products") ? JSON.parse(localStorage.getItem("products")) : [];
-        let orders = localStorage.getItem("order") ? JSON.parse(localStorage.getItem("order")) : [];
+        // Tính doanh thu từ API orders
+        if (allOrdersCache.length > 0) {
+            let doneOrders = allOrdersCache.filter(o => o.status == 3);
+            let tongtien = doneOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+            if (document.getElementById("doanh-thu")) document.getElementById("doanh-thu").innerHTML = vnd(tongtien);
+            // Số đơn hàng chờ xử lý
+            let pendingCount = allOrdersCache.filter(o => o.status == 0).length;
+            let pendingEl = document.getElementById("pending-orders");
+            if (pendingEl) pendingEl.innerHTML = pendingCount;
+        }
 
-        let tongtien = 0;
-        orders.forEach(item => {
-            if (item.tongtien) tongtien += item.tongtien;
-        });
-
-        if (document.getElementById("amount-product"))
-            document.getElementById("amount-product").innerHTML = products.length;
-
-        if (document.getElementById("doanh-thu"))
-            document.getElementById("doanh-thu").innerHTML = vnd(tongtien);
-
+        // Số sản phẩm từ API
+        const prodRes = await fetch('/api/v1/admin/products');
+        if (prodRes.ok) {
+            const prods = await prodRes.json();
+            if (document.getElementById("amount-product")) document.getElementById("amount-product").innerHTML = prods.filter(p => p.status == 1).length;
+        }
     } catch (error) {
         console.error("Lỗi cập nhật số liệu Dashboard:", error);
     }
@@ -1103,5 +1137,6 @@ window.onload = function () {
     showUser();
     updateDashboardStats();
     setupUserFilters();
-    loadProductsFromApi(); // Load sản phẩm từ API backend
+    loadProductsFromApi();
+    loadOrdersFromApi(); // Load đơn hàng từ API backend
 };

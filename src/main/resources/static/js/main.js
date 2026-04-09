@@ -522,45 +522,57 @@ function userInfo() {
 }
 
 // Thay doi thong tin
-function changeInformation() {
-    let accounts = localStorage.getItem('accounts') ? JSON.parse(localStorage.getItem('accounts')) : null;
+async function changeInformation() {
     let user = JSON.parse(localStorage.getItem('currentuser'));
     let infoname = document.getElementById('infoname');
     let infoemail = document.getElementById('infoemail');
     let infoaddress = document.getElementById('infoaddress');
 
-    user.fullname = infoname.value;
-    if (infoemail.value.length > 0) {
-        if (!emailIsValid(infoemail.value)) {
-            document.querySelector('.inforemail-error').innerHTML = 'Vui lòng nhập lại email!';
-            infoemail.value = '';
-        } else {
+    if (infoemail.value.length > 0 && !emailIsValid(infoemail.value)) {
+        document.querySelector('.inforemail-error').innerHTML = 'Vui lòng nhập lại email!';
+        infoemail.value = '';
+        return;
+    }
+
+    let token = localStorage.getItem('jwtToken');
+    try {
+        let res = await fetch('/api/v1/profile', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token ? `Bearer ${token}` : ''
+            },
+            body: JSON.stringify({
+                fullName: infoname.value,
+                email: infoemail.value,
+                address: infoaddress.value
+            })
+        });
+        if (res.ok) {
+            // Cập nhật localStorage
+            user.fullname = infoname.value;
             user.email = infoemail.value;
+            user.address = infoaddress.value;
+            localStorage.setItem('currentuser', JSON.stringify(user));
+            kiemtradangnhap();
+            toast({ title: 'Success', message: 'Cập nhật thông tin thành công !', type: 'success', duration: 3000 });
+        } else {
+            let msg = await res.text();
+            toast({ title: 'Lỗi', message: msg || 'Cập nhật thất bại', type: 'error', duration: 3000 });
         }
+    } catch (e) {
+        // Fallback: lưu localStorage
+        user.fullname = infoname.value;
+        if (infoemail.value.length > 0) user.email = infoemail.value;
+        if (infoaddress.value.length > 0) user.address = infoaddress.value;
+        localStorage.setItem('currentuser', JSON.stringify(user));
+        kiemtradangnhap();
+        toast({ title: 'Success', message: 'Cập nhật thông tin thành công !', type: 'success', duration: 3000 });
     }
-
-    if (infoaddress.value.length > 0) {
-        user.address = infoaddress.value;
-    }
-
-    if (accounts) {
-        let vitri = accounts.findIndex(item => item.phone == user.phone);
-        if (vitri !== -1) {
-            accounts[vitri].fullname = user.fullname;
-            accounts[vitri].email = user.email;
-            accounts[vitri].address = user.address;
-            localStorage.setItem('accounts', JSON.stringify(accounts));
-        }
-    }
-    
-    localStorage.setItem('currentuser', JSON.stringify(user));
-    kiemtradangnhap();
-    toast({ title: 'Success', message: 'Cập nhật thông tin thành công !', type: 'success', duration: 3000 });
 }
 
 // Đổi mật khẩu 
-function changePassword() {
-    let currentUser = JSON.parse(localStorage.getItem("currentuser"));
+async function changePassword() {
     let passwordCur = document.getElementById('password-cur-info');
     let passwordAfter = document.getElementById('password-after-info');
     let passwordConfirm = document.getElementById('password-comfirm-info');
@@ -571,14 +583,12 @@ function changePassword() {
     } else {
         document.querySelector('.password-cur-info-error').innerHTML = '';
     }
-
     if (passwordAfter.value.length == 0) {
         document.querySelector('.password-after-info-error').innerHTML = 'Vui lòn nhập mật khẩu mới';
         check = false;
     } else {
         document.querySelector('.password-after-info-error').innerHTML = '';
     }
-
     if (passwordConfirm.value.length == 0) {
         document.querySelector('.password-after-comfirm-error').innerHTML = 'Vui lòng nhập mật khẩu xác nhận';
         check = false;
@@ -586,44 +596,41 @@ function changePassword() {
         document.querySelector('.password-after-comfirm-error').innerHTML = '';
     }
 
-    if (check == true) {
-        if (passwordCur.value.length > 0) {
-            if (passwordCur.value == currentUser.password) {
-                document.querySelector('.password-cur-info-error').innerHTML = '';
-                if (passwordAfter.value.length > 0) {
-                    if (passwordAfter.value.length < 6) {
-                        document.querySelector('.password-after-info-error').innerHTML = 'Vui lòng nhập mật khẩu mới có số  kí tự lớn hơn bằng 6';
-                    } else {
-                        document.querySelector('.password-after-info-error').innerHTML = '';
-                        if (passwordConfirm.value.length > 0) {
-                            if (passwordConfirm.value == passwordAfter.value) {
-                                document.querySelector('.password-after-comfirm-error').innerHTML = '';
-                                currentUser.password = passwordAfter.value;
-                                localStorage.setItem('currentuser', JSON.stringify(currentUser));
-                                
-                                let accounts = localStorage.getItem('accounts') ? JSON.parse(localStorage.getItem('accounts')) : null;
-                                if (accounts) {
-                                    let accountChange = accounts.find(acc => acc.phone === currentUser.phone);
-                                    if (accountChange) {
-                                        accountChange.password = currentUser.password;
-                                        localStorage.setItem('accounts', JSON.stringify(accounts));
-                                    }
-                                }
-                                toast({ title: 'Success', message: 'Đổi mật khẩu thành công !', type: 'success', duration: 3000 });
-                            } else {
-                                document.querySelector('.password-after-comfirm-error').innerHTML = 'Mật khẩu bạn nhập không trùng khớp';
-                            }
-                        } else {
-                            document.querySelector('.password-after-comfirm-error').innerHTML = 'Vui lòng xác nhận mật khẩu';
-                        }
-                    }
-                } else {
-                    document.querySelector('.password-after-info-error').innerHTML = 'Vui lòng nhập mật khẩu mới';
-                }
-            } else {
-                document.querySelector('.password-cur-info-error').innerHTML = 'Bạn đã nhập sai mật khẩu hiện tại';
-            }
+    if (!check) return;
+
+    if (passwordAfter.value !== passwordConfirm.value) {
+        document.querySelector('.password-after-comfirm-error').innerHTML = 'Mật khẩu bạn nhập không trùng khớp';
+        return;
+    }
+    if (passwordAfter.value.length < 6) {
+        document.querySelector('.password-after-info-error').innerHTML = 'Vui lòng nhập mật khẩu mới có số ký tự lớn hơn bằng 6';
+        return;
+    }
+
+    let token = localStorage.getItem('jwtToken');
+    try {
+        let res = await fetch('/api/v1/profile/change-password', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token ? `Bearer ${token}` : ''
+            },
+            body: JSON.stringify({
+                currentPassword: passwordCur.value,
+                newPassword: passwordAfter.value
+            })
+        });
+        if (res.ok) {
+            toast({ title: 'Success', message: 'Đổi mật khẩu thành công !', type: 'success', duration: 3000 });
+            passwordCur.value = '';
+            passwordAfter.value = '';
+            passwordConfirm.value = '';
+        } else {
+            let msg = await res.text();
+            document.querySelector('.password-cur-info-error').innerHTML = msg || 'Đổi mật khẩu thất bại';
         }
+    } catch (e) {
+        toast({ title: 'Lỗi', message: 'Không thể kết nối server', type: 'error', duration: 3000 });
     }
 }
 
@@ -635,7 +642,27 @@ function getProductInfo(id) {
 }
 
 // Quan ly don hang
-function renderOrderProduct() {
+async function renderOrderProduct() {
+    let token = localStorage.getItem('jwtToken');
+    let orderHistorySection = document.querySelector(".order-history-section");
+    orderHistorySection.innerHTML = '<div class="loading-spinner"><i class="fa-light fa-spinner fa-spin"></i> Đang tải đơn hàng...</div>';
+
+    try {
+        // Thử gọi API trước
+        let response = await fetch('/api/v1/orders/my', {
+            headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+        });
+
+        if (response.ok) {
+            let orders = await response.json();
+            renderOrdersFromApi(orders);
+            return;
+        }
+    } catch (e) {
+        console.warn('Không thể load đơn hàng từ API, dùng localStorage:', e);
+    }
+
+    // Fallback: dùng localStorage
     let currentUser = JSON.parse(localStorage.getItem('currentuser'));
     let order = localStorage.getItem('order') ? JSON.parse(localStorage.getItem('order')) : [];
     let orderHtml = "";
@@ -686,6 +713,142 @@ function renderOrderProduct() {
         });
     }
     document.querySelector(".order-history-section").innerHTML = orderHtml;
+}
+
+function renderOrdersFromApi(orders) {
+    let orderHtml = "";
+    if (!orders || orders.length == 0) {
+        orderHtml = `<div class="empty-order-section"><img src="./assets/img/empty-order.jpg" alt="" class="empty-order-img"><p>Chưa có đơn hàng nào</p></div>`;
+    } else {
+        orders.forEach(order => {
+            let statusClass = '';
+            if (order.status == 3) statusClass = 'complete';
+            else if (order.status == 4) statusClass = 'cancelled';
+            else statusClass = 'no-complete';
+
+            let canCancel = order.status == 0;
+            let productHtml = `<div class="order-history-group">`;
+            
+            if (order.items && order.items.length > 0) {
+                order.items.forEach(item => {
+                    let imgSrc = item.productImage || './assets/img/blank-image.png';
+                    if (imgSrc && !imgSrc.startsWith('http') && !imgSrc.startsWith('/') && !imgSrc.startsWith('./')) {
+                        imgSrc = `./assets/img/products/${imgSrc}`;
+                    }
+                    productHtml += `<div class="order-history">
+                        <div class="order-history-left">
+                            <img src="${imgSrc}" alt="">
+                            <div class="order-history-info">
+                                <h4>${item.productTitle || 'Sản phẩm'}</h4>
+                                <p class="order-history-note"><i class="fa-light fa-pen"></i> ${item.note || 'Không có ghi chú'}</p>
+                                <p class="order-history-quantity">x${item.quantity}</p>
+                            </div>
+                        </div>
+                        <div class="order-history-right">
+                            <div class="order-history-price">
+                                <span class="order-history-current-price">${vnd(item.price * item.quantity)}</span>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+            }
+
+            productHtml += `<div class="order-history-control">
+                <div class="order-history-status">
+                    <span class="order-history-status-sp ${statusClass}">${order.statusText || 'Chờ xử lý'}</span>
+                    <button onclick="detailOrderApi(${order.id})"><i class="fa-regular fa-eye"></i> Xem chi tiết</button>
+                    ${canCancel ? `<button class="btn-cancel-order" onclick="cancelOrderApi(${order.id})"><i class="fa-regular fa-xmark"></i> Hủy đơn</button>` : ''}
+                </div>
+                <div class="order-history-total">
+                    <span class="order-history-total-desc">Tổng tiền: </span>
+                    <span class="order-history-toltal-price">${vnd(order.totalPrice || 0)}</span>
+                </div>
+            </div>`;
+            productHtml += `</div>`;
+            orderHtml += productHtml;
+        });
+    }
+    document.querySelector(".order-history-section").innerHTML = orderHtml;
+}
+
+// Hủy đơn hàng qua API
+async function cancelOrderApi(orderId) {
+    if (!confirm('Bạn có chắc muốn hủy đơn hàng này?')) return;
+    let token = localStorage.getItem('jwtToken');
+    try {
+        let res = await fetch(`/api/v1/orders/${orderId}/cancel`, {
+            method: 'PUT',
+            headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+        });
+        if (res.ok) {
+            toast({ title: 'Thành công', message: 'Đã hủy đơn hàng', type: 'success', duration: 3000 });
+            renderOrderProduct();
+        } else {
+            let msg = await res.text();
+            toast({ title: 'Lỗi', message: msg, type: 'error', duration: 3000 });
+        }
+    } catch (e) {
+        toast({ title: 'Lỗi', message: 'Không thể kết nối server', type: 'error', duration: 3000 });
+    }
+}
+
+// Xem chi tiết đơn hàng qua API
+async function detailOrderApi(orderId) {
+    let token = localStorage.getItem('jwtToken');
+    try {
+        // Lấy từ danh sách orders đã có trong DOM hoặc fetch lại
+        let res = await fetch('/api/v1/orders/my', {
+            headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+        });
+        if (res.ok) {
+            let orders = await res.json();
+            let order = orders.find(o => o.id == orderId);
+            if (order) {
+                showDetailOrderModal(order);
+            }
+        }
+    } catch (e) {
+        console.error('Lỗi xem chi tiết:', e);
+    }
+}
+
+function showDetailOrderModal(order) {
+    document.querySelector(".modal.detail-order").classList.add("open");
+    body.style.overflow = "hidden";
+    let deliveryInfo = order.deliveryType === 'pickup' 
+        ? `Chi nhánh: ${order.branch || order.deliveryAddress || ''}` 
+        : order.deliveryAddress || '';
+    let detailOrderHtml = `<ul class="detail-order-group">
+        <li class="detail-order-item">
+            <span class="detail-order-item-left"><i class="fa-light fa-calendar-days"></i> Ngày đặt hàng</span>
+            <span class="detail-order-item-right">${formatDate(order.createdAt)}</span>
+        </li>
+        <li class="detail-order-item">
+            <span class="detail-order-item-left"><i class="fa-light fa-truck"></i> Hình thức giao</span>
+            <span class="detail-order-item-right">${order.deliveryType === 'pickup' ? 'Tự đến lấy' : 'Giao tận nơi'}</span>
+        </li>
+        <li class="detail-order-item">
+            <span class="detail-order-item-left"><i class="fa-light fa-clock"></i> Ngày nhận hàng</span>
+            <span class="detail-order-item-right">${order.deliveryTime ? order.deliveryTime + ' - ' : ''}${order.shippingDate ? formatDate(order.shippingDate) : ''}</span>
+        </li>
+        <li class="detail-order-item">
+            <span class="detail-order-item-left"><i class="fa-light fa-location-dot"></i> Địa điểm nhận</span>
+            <span class="detail-order-item-right">${deliveryInfo}</span>
+        </li>
+        <li class="detail-order-item">
+            <span class="detail-order-item-left"><i class="fa-thin fa-person"></i> Người nhận</span>
+            <span class="detail-order-item-right">${order.recipientName || ''}</span>
+        </li>
+        <li class="detail-order-item">
+            <span class="detail-order-item-left"><i class="fa-light fa-phone"></i> Số điện thoại nhận</span>
+            <span class="detail-order-item-right">${order.recipientPhone || ''}</span>
+        </li>
+        <li class="detail-order-item">
+            <span class="detail-order-item-left"><i class="fa-light fa-tag"></i> Trạng thái</span>
+            <span class="detail-order-item-right">${order.statusText || ''}</span>
+        </li>
+    </ul>`
+    document.querySelector(".detail-order-content").innerHTML = detailOrderHtml;
 }
 
 // Get Order Details

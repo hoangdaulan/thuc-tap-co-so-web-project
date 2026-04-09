@@ -1,72 +1,37 @@
-package vn.team05.webfastfood.model;
+package vn.team05.webfastfood.dto.request;
 
-import jakarta.persistence.*;
 import java.util.List;
 
-@Entity
-@Table(name = "orders")
-public class Order extends BaseEntity {
+public class PlaceOrderRequest {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
-
-    @Column(name = "note")
     private String note;
-
-    @Column(name = "total_price")
-    private Double totalPrice;
-
-    @Column(name = "status")
-    private Integer status = 0; // 0: Pending, 1: Confirmed, 2: Delivering, 3: Done, 4: Cancelled
-
-    @Column(name = "payment_method")
     private String paymentMethod; // "cod" or "banking"
-
-    @Column(name = "shipping_date")
     private String shippingDate;
-
-    @Column(name = "delivery_type")
     private String deliveryType; // "delivery" or "pickup"
-
-    @Column(name = "recipient_name")
     private String recipientName;
-
-    @Column(name = "recipient_phone")
     private String recipientPhone;
-
-    @Column(name = "delivery_address")
     private String deliveryAddress;
+    private String deliveryTime; // e.g. "08:00", "Giao ngay khi xong"
+    private String branch; // chi nhánh (nếu tự đến lấy)
+    private List<OrderItemRequest> items;
 
-    @Column(name = "delivery_time")
-    private String deliveryTime;
+    public static class OrderItemRequest {
+        private Long productId;
+        private Integer quantity;
+        private String note;
 
-    @Column(name = "branch")
-    private String branch;
+        public Long getProductId() { return productId; }
+        public void setProductId(Long productId) { this.productId = productId; }
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<OrderItem> items;
+        public Integer getQuantity() { return quantity; }
+        public void setQuantity(Integer quantity) { this.quantity = quantity; }
 
-    // Getters and Setters
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
+        public String getNote() { return note; }
+        public void setNote(String note) { this.note = note; }
+    }
 
     public String getNote() { return note; }
     public void setNote(String note) { this.note = note; }
-
-    public Double getTotalPrice() { return totalPrice; }
-    public void setTotalPrice(Double totalPrice) { this.totalPrice = totalPrice; }
-
-    public Integer getStatus() { return status; }
-    public void setStatus(Integer status) { this.status = status; }
 
     public String getPaymentMethod() { return paymentMethod; }
     public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
@@ -92,6 +57,6 @@ public class Order extends BaseEntity {
     public String getBranch() { return branch; }
     public void setBranch(String branch) { this.branch = branch; }
 
-    public List<OrderItem> getItems() { return items; }
-    public void setItems(List<OrderItem> items) { this.items = items; }
+    public List<OrderItemRequest> getItems() { return items; }
+    public void setItems(List<OrderItemRequest> items) { this.items = items; }
 }

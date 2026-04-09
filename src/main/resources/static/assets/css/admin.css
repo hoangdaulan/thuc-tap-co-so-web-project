@@ -1352,3 +1352,29 @@ label a {
     font-size: 80px;
     margin-top: 30px;
 }
+
+/* ===== Admin Order Status ===== */
+.status-complete { color: #27ae60; font-weight: 600; }
+.status-no-complete { color: #e17055; font-weight: 600; }
+.status-cancelled { color: #636e72; font-weight: 600; }
+
+/* Nút cập nhật trạng thái trong modal */
+.order-status-select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    margin-right: 10px;
+    outline: none;
+    cursor: pointer;
+}
+.btn-cap-nhat {
+    background-color: #0984e3;
+    color: #fff;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+.btn-cap-nhat:hover { background-color: #0773c6; }

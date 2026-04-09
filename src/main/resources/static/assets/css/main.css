@@ -2390,3 +2390,41 @@ input[type=number] {
     min-width: 220px;
 }
 
+/* ===== Extended Order Status Styles ===== */
+.order-history-status-sp.cancelled {
+    background-color: #636e72;
+    color: #fff;
+    padding-left: 35px;
+}
+.order-history-status-sp.cancelled::before {
+    content: "\f00d";
+    font-family: "Font Awesome 6 Pro";
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+.order-history-status button {
+    background-color: #e5e5e5;
+    border: none;
+    outline: none;
+    padding: 5px 15px;
+    border-radius: 15px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-left: 10px;
+}
+.order-history-status button:hover { background-color: #ddd; }
+.btn-cancel-order {
+    background-color: #636e72 !important;
+    color: #fff !important;
+    border: none !important;
+    outline: none !important;
+    padding: 5px 12px !important;
+    border-radius: 15px !important;
+    font-size: 13px !important;
+    cursor: pointer !important;
+    margin-left: 8px !important;
+}
+.btn-cancel-order:hover { background-color: #2d3436 !important; }
+.loading-spinner { text-align: center; padding: 30px; color: #888; font-size: 16px; }
