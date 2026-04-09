@@ -32,6 +32,17 @@ public class Product extends BaseEntity {
     @Column(name = "discount")
     private Integer discount = 0;
 
+    @Column(name = "quantity")
+    private Integer quantity = 0;
+
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
+    }
+
     public Integer getDiscount() {
         return discount;
     }

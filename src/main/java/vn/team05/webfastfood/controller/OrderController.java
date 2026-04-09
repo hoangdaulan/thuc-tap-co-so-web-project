@@ -1,5 +1,7 @@
 package vn.team05.webfastfood.controller;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -10,19 +12,12 @@ import vn.team05.webfastfood.service.OrderService;
 
 import java.util.List;
 
-/**
- * API đặt hàng và quản lý đơn hàng cho khách hàng.
- * Base: /api/v1/orders
- */
 @RestController
 @RequestMapping("/api/v1/orders")
+@RequiredArgsConstructor // Tự tạo Constructor cho orderService (Lombok)
 public class OrderController {
 
     private final OrderService orderService;
-
-    public OrderController(OrderService orderService) {
-        this.orderService = orderService;
-    }
 
     private String resolveAuthenticatedPhone(Authentication authentication) {
         if (authentication == null
@@ -33,18 +28,14 @@ public class OrderController {
         return authentication.getName();
     }
 
-    /**
-     * POST /api/v1/orders
-     * Đặt hàng mới (yêu cầu đăng nhập)
-     */
     @PostMapping
-    public ResponseEntity<?> placeOrder(@RequestBody PlaceOrderRequest request,
-                                         Authentication authentication) {
+    public ResponseEntity<?> placeOrder(@RequestBody PlaceOrderRequest request, Authentication authentication) {
         try {
             String phone = resolveAuthenticatedPhone(authentication);
             if (phone == null || phone.isBlank()) {
-                return ResponseEntity.status(401).body("Bạn cần đăng nhập để đặt hàng");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Bạn cần đăng nhập để đặt hàng");
             }
+            // Gọi Service xử lý (logic tìm User nên nằm trong Service)
             OrderResponse response = orderService.placeOrder(request, phone);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
@@ -52,16 +43,12 @@ public class OrderController {
         }
     }
 
-    /**
-     * GET /api/v1/orders/my
-     * Lấy lịch sử đơn hàng của khách đang đăng nhập
-     */
     @GetMapping("/my")
     public ResponseEntity<?> getMyOrders(Authentication authentication) {
         try {
             String phone = resolveAuthenticatedPhone(authentication);
             if (phone == null || phone.isBlank()) {
-                return ResponseEntity.status(401).body("Bạn cần đăng nhập");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Bạn cần đăng nhập");
             }
             List<OrderResponse> orders = orderService.getOrdersByPhone(phone);
             return ResponseEntity.ok(orders);
@@ -70,16 +57,12 @@ public class OrderController {
         }
     }
 
-    /**
-     * PUT /api/v1/orders/{id}/cancel
-     * Khách hủy đơn hàng (chỉ khi đơn đang chờ xác nhận)
-     */
     @PutMapping("/{id}/cancel")
     public ResponseEntity<?> cancelOrder(@PathVariable Long id, Authentication authentication) {
         try {
             String phone = resolveAuthenticatedPhone(authentication);
             if (phone == null || phone.isBlank()) {
-                return ResponseEntity.status(401).body("Bạn cần đăng nhập");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Bạn cần đăng nhập");
             }
             OrderResponse response = orderService.cancelOrder(id, phone);
             return ResponseEntity.ok(response);

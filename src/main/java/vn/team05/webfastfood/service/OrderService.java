@@ -1,5 +1,6 @@
 package vn.team05.webfastfood.service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.team05.webfastfood.dto.request.PlaceOrderRequest;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor // Lombok tự tạo constructor cho các field final
 public class OrderService {
 
     private final OrderRepository orderRepository;
@@ -25,19 +27,6 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
 
-    public OrderService(OrderRepository orderRepository,
-                        OrderItemRepository orderItemRepository,
-                        ProductRepository productRepository,
-                        UserRepository userRepository) {
-        this.orderRepository = orderRepository;
-        this.orderItemRepository = orderItemRepository;
-        this.productRepository = productRepository;
-        this.userRepository = userRepository;
-    }
-
-    /**
-     * Đặt hàng mới
-     */
     @Transactional
     public OrderResponse placeOrder(PlaceOrderRequest request, String phone) {
         User user = userRepository.findByPhone(phone)
@@ -69,18 +58,33 @@ public class OrderService {
             Product product = productRepository.findById(itemReq.getProductId())
                     .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại: " + itemReq.getProductId()));
 
+            // Logic tính giá có chiết khấu (từ code đồng đội)
+            double itemPrice = product.getPrice() != null ? product.getPrice() : 0.0;
+            if (product.getDiscount() != null && product.getDiscount() > 0) {
+                itemPrice = itemPrice - (itemPrice * product.getDiscount() / 100.0);
+            }
+
+            // Trừ số lượng kho (từ code đồng đội)
+            if (product.getQuantity() != null) {
+                if (product.getQuantity() < itemReq.getQuantity()) {
+                    throw new RuntimeException("Sản phẩm " + product.getTitle() + " không đủ số lượng!");
+                }
+                product.setQuantity(product.getQuantity() - itemReq.getQuantity());
+                productRepository.save(product);
+            }
+
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(savedOrder);
             orderItem.setProduct(product);
             orderItem.setQuantity(itemReq.getQuantity());
-            orderItem.setPrice(product.getPrice());
+            orderItem.setPrice(itemPrice);
             orderItem.setNote(itemReq.getNote());
             items.add(orderItemRepository.save(orderItem));
 
-            totalPrice += product.getPrice() * itemReq.getQuantity();
+            totalPrice += itemPrice * itemReq.getQuantity();
         }
 
-        // Thêm phí vận chuyển nếu giao tận nơi
+        // Phí vận chuyển (từ code của bạn)
         if ("delivery".equals(request.getDeliveryType())) {
             totalPrice += 30000;
         }
@@ -91,42 +95,14 @@ public class OrderService {
         return toOrderResponse(savedOrder, items);
     }
 
-    /**
-     * Lấy lịch sử đơn hàng của khách
-     */
     public List<OrderResponse> getOrdersByPhone(String phone) {
         User user = userRepository.findByPhone(phone)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
-
-        List<Order> orders = orderRepository.findByUserOrderByCreatedAtDesc(user);
-        return orders.stream()
+        return orderRepository.findByUserOrderByCreatedAtDesc(user).stream()
                 .map(o -> toOrderResponse(o, orderItemRepository.findByOrder(o)))
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Admin: lấy tất cả đơn hàng
-     */
-    public List<OrderResponse> getAllOrders() {
-        List<Order> orders = orderRepository.findAllByOrderByCreatedAtDesc();
-        return orders.stream()
-                .map(o -> toOrderResponse(o, orderItemRepository.findByOrder(o)))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Admin: lấy đơn hàng theo trạng thái
-     */
-    public List<OrderResponse> getOrdersByStatus(Integer status) {
-        List<Order> orders = orderRepository.findByStatusOrderByCreatedAtDesc(status);
-        return orders.stream()
-                .map(o -> toOrderResponse(o, orderItemRepository.findByOrder(o)))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Admin/Nhân viên: Cập nhật trạng thái đơn hàng
-     */
     @Transactional
     public OrderResponse updateOrderStatus(Long orderId, Integer newStatus) {
         Order order = orderRepository.findById(orderId)
@@ -136,14 +112,10 @@ public class OrderService {
         return toOrderResponse(order, orderItemRepository.findByOrder(order));
     }
 
-    /**
-     * Khách hủy đơn (chỉ khi đơn còn ở trạng thái Pending=0)
-     */
     @Transactional
     public OrderResponse cancelOrder(Long orderId, String phone) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
-
         if (!order.getUser().getPhone().equals(phone)) {
             throw new RuntimeException("Không có quyền hủy đơn hàng này");
         }
@@ -154,8 +126,6 @@ public class OrderService {
         orderRepository.save(order);
         return toOrderResponse(order, orderItemRepository.findByOrder(order));
     }
-
-    // ---- Helper ----
 
     private String getStatusText(Integer status) {
         if (status == null) return "Không xác định";
