@@ -1,6 +1,7 @@
 package vn.team05.webfastfood.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import vn.team05.webfastfood.dto.request.PlaceOrderRequest;
@@ -23,6 +24,15 @@ public class OrderController {
         this.orderService = orderService;
     }
 
+    private String resolveAuthenticatedPhone(Authentication authentication) {
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            return null;
+        }
+        return authentication.getName();
+    }
+
     /**
      * POST /api/v1/orders
      * Đặt hàng mới (yêu cầu đăng nhập)
@@ -31,10 +41,10 @@ public class OrderController {
     public ResponseEntity<?> placeOrder(@RequestBody PlaceOrderRequest request,
                                          Authentication authentication) {
         try {
-            if (authentication == null || !authentication.isAuthenticated()) {
+            String phone = resolveAuthenticatedPhone(authentication);
+            if (phone == null || phone.isBlank()) {
                 return ResponseEntity.status(401).body("Bạn cần đăng nhập để đặt hàng");
             }
-            String phone = authentication.getName();
             OrderResponse response = orderService.placeOrder(request, phone);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
@@ -49,10 +59,10 @@ public class OrderController {
     @GetMapping("/my")
     public ResponseEntity<?> getMyOrders(Authentication authentication) {
         try {
-            if (authentication == null || !authentication.isAuthenticated()) {
+            String phone = resolveAuthenticatedPhone(authentication);
+            if (phone == null || phone.isBlank()) {
                 return ResponseEntity.status(401).body("Bạn cần đăng nhập");
             }
-            String phone = authentication.getName();
             List<OrderResponse> orders = orderService.getOrdersByPhone(phone);
             return ResponseEntity.ok(orders);
         } catch (RuntimeException e) {
@@ -67,10 +77,10 @@ public class OrderController {
     @PutMapping("/{id}/cancel")
     public ResponseEntity<?> cancelOrder(@PathVariable Long id, Authentication authentication) {
         try {
-            if (authentication == null || !authentication.isAuthenticated()) {
+            String phone = resolveAuthenticatedPhone(authentication);
+            if (phone == null || phone.isBlank()) {
                 return ResponseEntity.status(401).body("Bạn cần đăng nhập");
             }
-            String phone = authentication.getName();
             OrderResponse response = orderService.cancelOrder(id, phone);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {

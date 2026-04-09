@@ -321,11 +321,16 @@ async function xulyDathang(product) {
             }, 2000);
         } else {
             let errMsg = await response.text();
-            // Fallback: lưu local nếu API lỗi
-            xulyDathangLocal(product, currentUser, items, requestBody);
+            toast({
+                title: 'Lỗi',
+                message: errMsg || 'Đặt hàng thất bại, vui lòng đăng nhập lại và thử lại.',
+                type: 'error',
+                duration: 3500
+            });
         }
     } catch (error) {
         console.error('Lỗi đặt hàng API:', error);
+        // Chỉ fallback khi lỗi mạng hoặc backend không truy cập được.
         xulyDathangLocal(product, currentUser, items, requestBody);
     }
 }

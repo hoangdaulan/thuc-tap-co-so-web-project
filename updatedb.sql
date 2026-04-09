@@ -12,3 +12,25 @@ VALUES
 
 -- Tắt chế độ chèn Identity sau khi xong
 SET IDENTITY_INSERT dbo.categories OFF;
+
+-- Nâng quyền 1 tài khoản đã đăng ký thành ADMIN (đổi số điện thoại bên dưới)
+DECLARE @AdminPhone NVARCHAR(20) = N'0900000000';
+
+IF EXISTS (SELECT 1 FROM dbo.users WHERE phone = @AdminPhone)
+BEGIN
+    UPDATE dbo.users
+    SET role = 'ADMIN',
+        status = 1,
+        updated_at = GETDATE()
+    WHERE phone = @AdminPhone;
+
+    PRINT N'Đã nâng quyền ADMIN cho tài khoản: ' + @AdminPhone;
+END
+ELSE
+BEGIN
+    PRINT N'Không tìm thấy tài khoản với số điện thoại: ' + @AdminPhone + N'. Hãy đăng ký tài khoản trước.';
+END;
+
+SELECT id, full_name, phone, role, status
+FROM dbo.users
+WHERE phone = @AdminPhone;
