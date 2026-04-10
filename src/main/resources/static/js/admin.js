@@ -166,7 +166,8 @@ async function loadProductsFromApi() {
     try {
         const response = await fetch('/api/v1/admin/products');
         if (!response.ok) throw new Error('Không thể tải danh sách sản phẩm');
-        allProductsCache = await response.json();
+        let resData = await response.json();
+        allProductsCache = resData.data || [];
         showProduct();
         // Cập nhật số lượng sản phẩm trên dashboard
         const amountProductEl = document.getElementById('amount-product');
@@ -435,7 +436,8 @@ async function loadOrdersFromApi() {
             headers: { 'Authorization': token ? `Bearer ${token}` : '' }
         });
         if (!response.ok) throw new Error('Không thể tải đơn hàng');
-        allOrdersCache = await response.json();
+        let resData = await response.json();
+        allOrdersCache = resData.data || [];
         findOrder();
         await updateDashboardStats();
     } catch (error) {
@@ -492,7 +494,7 @@ async function detailOrderAdmin(id) {
     if (!order) {
         try {
             let res = await fetch(`/api/v1/admin/orders?status=`, { headers: { 'Authorization': token ? `Bearer ${token}` : '' } });
-            if (res.ok) { allOrdersCache = await res.json(); order = allOrdersCache.find(o => o.id == id); }
+            if (res.ok) { let resData = await res.json(); allOrdersCache = resData.data || []; order = allOrdersCache.find(o => o.id == id); }
         } catch (e) { }
     }
     if (!order) return;
@@ -822,7 +824,8 @@ function showUserArr(arr) {
 async function showUser() {
     try {
         const response = await fetch('/api/admin/khach-hang');
-        const data = await response.json();
+        const resData = await response.json();
+        const data = resData.data || [];
         let accountHtml = '';
         if (data.length === 0) {
             accountHtml = `<tr><td colspan="6">Không có dữ liệu khách hàng</td></tr>`;
@@ -971,7 +974,8 @@ document.getElementById("logout-acc").addEventListener('click', (e) => {
 function loadCustomersFromApi() {
     fetch('/api/admin/khach-hang')
         .then(response => response.json())
-        .then(data => {
+        .then(resData => {
+            let data = resData.data || [];
             let html = '';
             data.forEach((user, index) => {
                 html += `
@@ -1008,7 +1012,8 @@ async function updateDashboardStats() {
         // Lấy user count
         const userRes = await fetch('/api/admin/khach-hang');
         if (userRes.ok) {
-            const users = await userRes.json();
+            let resData = await userRes.json();
+            const users = resData.data || [];
             const amountUserEl = document.getElementById("amount-user");
             if (amountUserEl) amountUserEl.innerHTML = users.length;
         }
@@ -1027,7 +1032,8 @@ async function updateDashboardStats() {
         // Số sản phẩm từ API
         const prodRes = await fetch('/api/v1/admin/products');
         if (prodRes.ok) {
-            const prods = await prodRes.json();
+            let resData = await prodRes.json();
+            const prods = resData.data || [];
             if (document.getElementById("amount-product")) document.getElementById("amount-product").innerHTML = prods.filter(p => p.status == 1).length;
         }
     } catch (error) {
@@ -1102,7 +1108,8 @@ async function filterUser() {
 
     try {
         const response = await fetch(url);
-        const data = await response.json();
+        const resData = await response.json();
+        const data = resData.data || [];
         renderUserTable(data);
     } catch (error) {
         console.error("Lỗi lọc khách hàng:", error);

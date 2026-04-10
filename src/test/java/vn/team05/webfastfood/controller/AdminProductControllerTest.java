@@ -7,10 +7,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
+import vn.team05.webfastfood.dto.response.ResponseData;
 import vn.team05.webfastfood.model.Category;
 import vn.team05.webfastfood.model.Product;
 import vn.team05.webfastfood.service.ProductService;
@@ -53,26 +55,29 @@ class AdminProductControllerTest {
     @Test
     void testGetAllProducts_ReturnsProductList() throws Exception {
         List<Product> products = Arrays.asList(sampleProduct);
-        Mockito.when(productService.getAllActiveProducts()).thenReturn(products);
+        ResponseData<List<Product>> responseData = new ResponseData<>(HttpStatus.OK.value(), "Lấy danh sách sản phẩm thành công", products);
+        Mockito.when(productService.getAllActiveProducts()).thenReturn(responseData);
 
         mockMvc.perform(get("/api/v1/admin/products"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].title").value("Gà rán giòn"))
-                .andExpect(jsonPath("$[0].price").value(45000.0));
+                .andExpect(jsonPath("$.data[0].title").value("Gà rán giòn"))
+                .andExpect(jsonPath("$.data[0].price").value(45000.0));
     }
 
     @Test
     void testGetAllProducts_ReturnsEmptyList() throws Exception {
-        Mockito.when(productService.getAllActiveProducts()).thenReturn(List.of());
+        ResponseData<List<Product>> responseData = new ResponseData<>(HttpStatus.OK.value(), "Lấy danh sách sản phẩm thành công", List.of());
+        Mockito.when(productService.getAllActiveProducts()).thenReturn(responseData);
 
         mockMvc.perform(get("/api/v1/admin/products"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isEmpty());
+                .andExpect(jsonPath("$.data").isEmpty());
     }
 
     @Test
     void testCreateProduct_WithImage_ReturnsCreatedProduct() throws Exception {
-        Mockito.when(productService.createProduct(any(), anyString())).thenReturn(sampleProduct);
+        ResponseData<Product> responseData = new ResponseData<>(HttpStatus.OK.value(), "Tạo sản phẩm thành công", sampleProduct);
+        Mockito.when(productService.createProduct(any(), any())).thenReturn(responseData);
 
         MockMultipartFile imageFile = new MockMultipartFile(
                 "image", "ga-ran.jpg", MediaType.IMAGE_JPEG_VALUE, "fake-image-bytes".getBytes()
@@ -86,12 +91,13 @@ class AdminProductControllerTest {
                 .param("categoryId", "1")
                 .param("status", "1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("Gà rán giòn"));
+                .andExpect(jsonPath("$.data.title").value("Gà rán giòn"));
     }
 
     @Test
     void testCreateProduct_WithoutImage_UsesDefaultImage() throws Exception {
-        Mockito.when(productService.createProduct(any(), eq("blank-image.png"))).thenReturn(sampleProduct);
+        ResponseData<Product> responseData = new ResponseData<>(HttpStatus.OK.value(), "Tạo sản phẩm thành công", sampleProduct);
+        Mockito.when(productService.createProduct(any(), any())).thenReturn(responseData);
 
         mockMvc.perform(multipart("/api/v1/admin/products")
                 .param("title", "Gà rán giòn")
@@ -103,7 +109,7 @@ class AdminProductControllerTest {
 
     @Test
     void testCreateProduct_InvalidCategory_ReturnsBadRequest() throws Exception {
-        Mockito.when(productService.createProduct(any(), anyString()))
+        Mockito.when(productService.createProduct(any(), any()))
                 .thenThrow(new RuntimeException("Không tìm thấy danh mục với ID: 99"));
 
         mockMvc.perform(multipart("/api/v1/admin/products")
@@ -120,11 +126,12 @@ class AdminProductControllerTest {
         deletedProduct.setId(1L);
         deletedProduct.setStatus(0);
 
-        Mockito.when(productService.softDeleteProduct(1L)).thenReturn(deletedProduct);
+        ResponseData<Product> responseData = new ResponseData<>(HttpStatus.OK.value(), "Xóa sản phẩm thành công", deletedProduct);
+        Mockito.when(productService.softDeleteProduct(1L)).thenReturn(responseData);
 
         mockMvc.perform(delete("/api/v1/admin/products/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(0));
+                .andExpect(jsonPath("$.data.status").value(0));
     }
 
     @Test

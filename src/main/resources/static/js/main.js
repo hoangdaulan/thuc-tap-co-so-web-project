@@ -654,7 +654,8 @@ async function renderOrderProduct() {
         });
 
         if (response.ok) {
-            let orders = await response.json();
+            let resData = await response.json();
+            let orders = resData.data || [];
             renderOrdersFromApi(orders);
             return;
         }
@@ -801,7 +802,8 @@ async function detailOrderApi(orderId) {
             headers: { 'Authorization': token ? `Bearer ${token}` : '' }
         });
         if (res.ok) {
-            let orders = await res.json();
+            let resData = await res.json();
+            let orders = resData.data || [];
             let order = orders.find(o => o.id == orderId);
             if (order) {
                 showDetailOrderModal(order);
@@ -1052,7 +1054,8 @@ async function showHomeProduct(products) {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            let apiData = await response.json();
+            let resData = await response.json();
+            let apiData = resData.data || [];
             
             products = apiData.map(p => {
                 return {

@@ -1,47 +1,29 @@
+// package: vn.team05.webfastfood.service
 package vn.team05.webfastfood.service;
 
+import vn.team05.webfastfood.dto.response.ResponseData;
 import vn.team05.webfastfood.model.User;
-import vn.team05.webfastfood.repository.UserRepository;
-import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
-@Service
-public class UserService {
-    private final UserRepository userRepository;
+/**
+ * Interface cho các thao tác liên quan đến người dùng.
+ */
+public interface UserService {
 
-    public UserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    ResponseData<List<User>> getAllCustomers();
 
-    public List<User> getAllCustomers() {
-        return userRepository.findAll();
-    }
+    ResponseData<User> createCustomer(User user);
 
-    public User saveUser(User user) {
-        if (userRepository.existsByPhone(user.getPhone())) {
-            throw new RuntimeException("Số điện thoại này đã được đăng ký!");
-        }
+    ResponseData<String> deleteUser(Long id);
 
-        return userRepository.save(user);
-    }
+    ResponseData<List<User>> filterUsers(String search, Boolean status, String startDate, String endDate);
 
-    public void deleteUser(Long id)
-    {
-        if(!userRepository.existsById(id))
-        {
-            throw new RuntimeException("Không tìm thấy khách hàng với ID: " + id);
-        }
-        userRepository.deleteById(id);
-    }
+    ResponseData<Map<String, String>> getProfile(String phone);
 
-    public List<User> filterUsers(String search, Boolean status, String startDate, String endDate) {
-        return userRepository.findUsersByFilter(
-                search,
-                status,
-                startDate != null ? LocalDateTime.parse(startDate) : null,
-                endDate != null ? LocalDateTime.parse(endDate) : null
-        );
-    }
+    ResponseData<Map<String, String>> updateProfile(Map<String, String> body, String phone);
+
+    ResponseData<Map<String, String>> changePassword(Map<String, String> body, String phone);
 }

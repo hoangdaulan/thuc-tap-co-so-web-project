@@ -1,5 +1,7 @@
+// package: vn.team05.webfastfood.service.impl
 package vn.team05.webfastfood.service.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,23 +22,18 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Triển khai logic xác thực (Đăng nhập / Đăng ký).
+ * Thay đổi: Sử dụng @RequiredArgsConstructor thay vì constructor thủ công.
+ */
 @Service
+@RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
-
-    public AuthServiceImpl(AuthenticationManager authenticationManager,
-                           UserRepository userRepository,
-                           PasswordEncoder passwordEncoder,
-                           JwtTokenProvider tokenProvider) {
-        this.authenticationManager = authenticationManager;
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.tokenProvider = tokenProvider;
-    }
 
     @Override
     public ResponseData<AuthResponse> login(LoginRequest loginRequest) {
@@ -93,4 +90,3 @@ public class AuthServiceImpl implements AuthService {
         return userData;
     }
 }
-
