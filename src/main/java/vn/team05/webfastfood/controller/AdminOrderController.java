@@ -4,9 +4,11 @@ package vn.team05.webfastfood.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import vn.team05.webfastfood.dto.response.OrderResponse;
 import vn.team05.webfastfood.dto.response.ResponseData;
 import vn.team05.webfastfood.service.OrderService;
+import vn.team05.webfastfood.service.OrderRealtimeService;
 
 import java.util.List;
 import java.util.Map;
@@ -24,6 +26,7 @@ import java.util.Map;
 public class AdminOrderController {
 
     private final OrderService orderService;
+    private final OrderRealtimeService orderRealtimeService;
 
     /**
      * GET /api/v1/admin/orders
@@ -39,6 +42,15 @@ public class AdminOrderController {
             responseData = orderService.getAllOrders();
         }
         return ResponseEntity.ok(responseData);
+    }
+
+    /**
+     * GET /api/v1/admin/orders/stream
+     * Subscribe realtime events khi co don hang moi/cap nhat trang thai.
+     */
+    @GetMapping(value = "/stream", produces = "text/event-stream")
+    public SseEmitter streamOrders() {
+        return orderRealtimeService.subscribe();
     }
 
     /**

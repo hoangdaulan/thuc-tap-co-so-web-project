@@ -160,6 +160,19 @@ function showProductArr(arr) {
 
 // Cache danh sách sản phẩm lấy từ API
 let allProductsCache = [];
+let allUsersCache = [];
+let dashboardStatsDebounceTimer = null;
+const DASHBOARD_STATS_DEBOUNCE_MS = 120;
+
+function scheduleDashboardStatsUpdate() {
+    if (dashboardStatsDebounceTimer) {
+        clearTimeout(dashboardStatsDebounceTimer);
+    }
+    dashboardStatsDebounceTimer = setTimeout(() => {
+        dashboardStatsDebounceTimer = null;
+        updateDashboardStats();
+    }, DASHBOARD_STATS_DEBOUNCE_MS);
+}
 
 // Load sản phẩm từ API backend
 async function loadProductsFromApi() {
@@ -169,9 +182,7 @@ async function loadProductsFromApi() {
         let resData = await response.json();
         allProductsCache = resData.data || [];
         showProduct();
-        // Cập nhật số lượng sản phẩm trên dashboard
-        const amountProductEl = document.getElementById('amount-product');
-        if (amountProductEl) amountProductEl.innerHTML = allProductsCache.length;
+        scheduleDashboardStatsUpdate();
     } catch (error) {
         console.error('Lỗi tải sản phẩm:', error);
         document.getElementById('show-product').innerHTML = `<div class="no-result"><div class="no-result-i"><i class="fa-light fa-triangle-exclamation"></i></div><div class="no-result-h">Không thể tải sản phẩm từ server</div></div>`;
@@ -415,7 +426,15 @@ async function changeStatus(id, newStatus) {
         });
         if (response.ok) {
             toast({ title: 'Thành công', message: 'Cập nhật trạng thái thành công!', type: 'success', duration: 2000 });
-            await loadOrdersFromApi();
+            const resData = await response.json();
+            const updatedOrder = resData.data;
+            if (updatedOrder) {
+                upsertOrderInCache(updatedOrder);
+                findOrder();
+                scheduleDashboardStatsUpdate();
+            } else {
+                await loadOrdersFromApi();
+            }
         } else {
             let msg = await response.text();
             toast({ title: 'Lỗi', message: msg, type: 'error', duration: 3000 });
@@ -427,6 +446,80 @@ async function changeStatus(id, newStatus) {
 
 // Cache danh sách đơn hàng từ API
 let allOrdersCache = [];
+let orderRealtimeSource = null;
+let realtimeRetryTimer = null;
+let realtimeRetryDelayMs = 1500;
+
+function upsertOrderInCache(order) {
+    if (!order || !order.id) return;
+    const index = allOrdersCache.findIndex(item => item.id === order.id);
+    if (index >= 0) {
+        allOrdersCache[index] = order;
+    } else {
+        allOrdersCache.unshift(order);
+    }
+    allOrdersCache.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+function handleRealtimeOrderEvent(rawPayload, eventName) {
+    if (!rawPayload) return;
+    let order;
+    try {
+        order = JSON.parse(rawPayload);
+    } catch (e) {
+        console.warn('Không parse được dữ liệu realtime:', e);
+        return;
+    }
+
+    upsertOrderInCache(order);
+    findOrder();
+    scheduleDashboardStatsUpdate();
+
+    if (eventName === 'NEW_ORDER') {
+        toast({ title: 'Đơn hàng mới', message: `Mã đơn #${order.id} vừa được tạo`, type: 'success', duration: 3500 });
+    }
+}
+
+function scheduleRealtimeReconnect() {
+    if (realtimeRetryTimer) return;
+    realtimeRetryTimer = setTimeout(() => {
+        realtimeRetryTimer = null;
+        initOrderRealtime();
+    }, realtimeRetryDelayMs);
+    realtimeRetryDelayMs = Math.min(realtimeRetryDelayMs * 2, 15000);
+}
+
+function initOrderRealtime() {
+    if (orderRealtimeSource) {
+        orderRealtimeSource.close();
+    }
+
+    orderRealtimeSource = new EventSource('/api/v1/admin/orders/stream');
+
+    orderRealtimeSource.onopen = function () {
+        realtimeRetryDelayMs = 1500;
+    };
+
+    orderRealtimeSource.addEventListener('NEW_ORDER', function (event) {
+        handleRealtimeOrderEvent(event.data, 'NEW_ORDER');
+    });
+
+    orderRealtimeSource.addEventListener('ORDER_STATUS_UPDATED', function (event) {
+        handleRealtimeOrderEvent(event.data, 'ORDER_STATUS_UPDATED');
+    });
+
+    // Fallback khi server không set event name.
+    orderRealtimeSource.onmessage = function (event) {
+        handleRealtimeOrderEvent(event.data, 'UNKNOWN');
+    };
+
+    orderRealtimeSource.onerror = function () {
+        if (orderRealtimeSource) {
+            orderRealtimeSource.close();
+        }
+        scheduleRealtimeReconnect();
+    };
+}
 
 // Tải đơn hàng từ API
 async function loadOrdersFromApi() {
@@ -439,7 +532,7 @@ async function loadOrdersFromApi() {
         let resData = await response.json();
         allOrdersCache = resData.data || [];
         findOrder();
-        await updateDashboardStats();
+        scheduleDashboardStatsUpdate();
     } catch (error) {
         console.error('Lỗi tải đơn hàng:', error);
     }
@@ -826,29 +919,9 @@ async function showUser() {
         const response = await fetch('/api/admin/khach-hang');
         const resData = await response.json();
         const data = resData.data || [];
-        let accountHtml = '';
-        if (data.length === 0) {
-            accountHtml = `<tr><td colspan="6">Không có dữ liệu khách hàng</td></tr>`;
-        } else {
-            data.forEach((account, index) => {
-                let tinhtrang = account.status === false ? `<span class="status-no-complete">Bị khóa</span>` : `<span class="status-complete">Hoạt động</span>`;
-                accountHtml += `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${account.fullName}</td>
-                    <td>${account.phone}</td>
-                    <td>${formatDate(account.createdAt)}</td>
-                    <td>${account.address}</td>
-                    <td>${account.email}</td>
-                    <td>${tinhtrang}</td>
-                    <td class="control control-table">
-                        <button class="btn-edit" onclick="editAccount(${account.id})"><i class="fa-light fa-pen-to-square"></i></button>
-                        <button class="btn-delete" onclick="deleteAccount(${account.id})"><i class="fa-regular fa-trash"></i></button>
-                    </td>
-                </tr>`;
-            });
-        }
-        document.getElementById('show-user').innerHTML = accountHtml;
+        allUsersCache = data;
+        renderUserTable(data);
+        scheduleDashboardStatsUpdate();
     } catch (error) { console.error("Lỗi API:", error); }
 }
 
@@ -950,7 +1023,7 @@ if (signupBtn) {
                 alert("Thêm khách hàng thành công!");
 
                 await showUser();
-                await updateDashboardStats();
+                scheduleDashboardStatsUpdate();
 
                 document.querySelector(".signup").classList.remove("open");
                 signUpFormReset();
@@ -972,70 +1045,28 @@ document.getElementById("logout-acc").addEventListener('click', (e) => {
 
 // API lay danh sach khach hang
 function loadCustomersFromApi() {
-    fetch('/api/admin/khach-hang')
-        .then(response => response.json())
-        .then(resData => {
-            let data = resData.data || [];
-            let html = '';
-            data.forEach((user, index) => {
-                html += `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td>${user.fullName}</td>
-                        <td>${user.phone}</td>
-                        <td>${new Date(user.createdAt).toLocaleDateString('vi-VN')}</td>
-                        <td>${account.address}</td>
-                        <td>${account.email}</td>
-                        <td>
-                            <span class="status ${user.status === true ? 'active' : 'locked'}">
-                                ${user.status === true ? 'Hoạt động' : 'Bị khóa'}
-                            </span>
-                        </td>
-                        <td>
-                            <button onclick="editUser(${user.id})"><i class="fa-light fa-pen-to-square"></i></button>
-                            <button onclick="deleteUser(${user.id})"><i class="fa-light fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `;
-            });
-            document.getElementById('show-user').innerHTML = html;
-        })
-        .catch(error => console.error('Lỗi kết nối API:', error));
+    showUser();
 }
 
-// Goi ham khi trang web vua load xong
-document.addEventListener('DOMContentLoaded', loadCustomersFromApi);
+// Note: user data is loaded in window.onload via showUser().
 
 async function updateDashboardStats() {
     try {
-        let token = localStorage.getItem('jwtToken');
-        // Lấy user count
-        const userRes = await fetch('/api/admin/khach-hang');
-        if (userRes.ok) {
-            let resData = await userRes.json();
-            const users = resData.data || [];
-            const amountUserEl = document.getElementById("amount-user");
-            if (amountUserEl) amountUserEl.innerHTML = users.length;
-        }
+        const amountUserEl = document.getElementById("amount-user");
+        if (amountUserEl) amountUserEl.innerHTML = allUsersCache.length;
 
-        // Tính doanh thu từ API orders
-        if (allOrdersCache.length > 0) {
-            let doneOrders = allOrdersCache.filter(o => o.status == 3);
-            let tongtien = doneOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
-            if (document.getElementById("doanh-thu")) document.getElementById("doanh-thu").innerHTML = vnd(tongtien);
-            // Số đơn hàng chờ xử lý
-            let pendingCount = allOrdersCache.filter(o => o.status == 0).length;
-            let pendingEl = document.getElementById("pending-orders");
-            if (pendingEl) pendingEl.innerHTML = pendingCount;
-        }
+        const activeProducts = allProductsCache.filter(p => p.status == null || p.status == 1);
+        const amountProductEl = document.getElementById("amount-product");
+        if (amountProductEl) amountProductEl.innerHTML = activeProducts.length;
 
-        // Số sản phẩm từ API
-        const prodRes = await fetch('/api/v1/admin/products');
-        if (prodRes.ok) {
-            let resData = await prodRes.json();
-            const prods = resData.data || [];
-            if (document.getElementById("amount-product")) document.getElementById("amount-product").innerHTML = prods.filter(p => p.status == 1).length;
-        }
+        const doneOrders = allOrdersCache.filter(o => o.status == 3);
+        const tongtien = doneOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+        const doanhThuEl = document.getElementById("doanh-thu");
+        if (doanhThuEl) doanhThuEl.innerHTML = vnd(tongtien);
+
+        const pendingCount = allOrdersCache.filter(o => o.status == 0).length;
+        const pendingEl = document.getElementById("pending-orders");
+        if (pendingEl) pendingEl.innerHTML = pendingCount;
     } catch (error) {
         console.error("Lỗi cập nhật số liệu Dashboard:", error);
     }
@@ -1053,8 +1084,9 @@ async function deleteAccount(id) {
 
             if (response.ok) {
                 alert("Đã xóa người dùng thành công!");
-                // Gọi lại hàm load danh sách để cập nhật bảng mà không cần F5
-                showUser();
+                allUsersCache = allUsersCache.filter(user => user.id !== id);
+                renderUserTable(allUsersCache);
+                scheduleDashboardStatsUpdate();
             } else {
                 const errorMsg = await response.text();
                 alert("Xóa thất bại: " + errorMsg);
@@ -1100,20 +1132,32 @@ async function filterUser() {
     const start = document.getElementById("time-start-user").value;
     const end = document.getElementById("time-end-user").value;
 
-    let url = `/api/admin/khach-hang/filter?search=${encodeURIComponent(search)}`;
+    let filtered = [...allUsersCache];
 
-    if (status !== "2") url += `&status=${status}`;
-    if (start) url += `&startDate=${start}T00:00:00`;
-    if (end) url += `&endDate=${end}T23:59:59`;
-
-    try {
-        const response = await fetch(url);
-        const resData = await response.json();
-        const data = resData.data || [];
-        renderUserTable(data);
-    } catch (error) {
-        console.error("Lỗi lọc khách hàng:", error);
+    if (search) {
+        const keyword = search.toLowerCase();
+        filtered = filtered.filter(user =>
+            (user.fullName || '').toLowerCase().includes(keyword)
+            || (user.phone || '').toLowerCase().includes(keyword)
+            || (user.email || '').toLowerCase().includes(keyword)
+        );
     }
+
+    if (status !== "2") {
+        const expectedStatus = status === "1";
+        filtered = filtered.filter(user => Boolean(user.status) === expectedStatus);
+    }
+
+    if (start) {
+        const startDate = new Date(`${start}T00:00:00`);
+        filtered = filtered.filter(user => new Date(user.createdAt) >= startDate);
+    }
+    if (end) {
+        const endDate = new Date(`${end}T23:59:59`);
+        filtered = filtered.filter(user => new Date(user.createdAt) <= endDate);
+    }
+
+    renderUserTable(filtered);
 }
 
 function setupUserFilters() {
@@ -1142,8 +1186,16 @@ function setupUserFilters() {
 window.onload = function () {
     checkLogin();
     showUser();
-    updateDashboardStats();
+    scheduleDashboardStatsUpdate();
     setupUserFilters();
     loadProductsFromApi();
     loadOrdersFromApi(); // Load đơn hàng từ API backend
+    initOrderRealtime();
 };
+
+window.addEventListener('beforeunload', function () {
+    if (orderRealtimeSource) {
+        orderRealtimeSource.close();
+    }
+});
+

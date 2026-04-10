@@ -16,6 +16,7 @@ import vn.team05.webfastfood.repository.OrderItemRepository;
 import vn.team05.webfastfood.repository.OrderRepository;
 import vn.team05.webfastfood.repository.ProductRepository;
 import vn.team05.webfastfood.repository.UserRepository;
+import vn.team05.webfastfood.service.OrderRealtimeService;
 import vn.team05.webfastfood.service.OrderService;
 
 import java.util.ArrayList;
@@ -35,6 +36,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderItemRepository orderItemRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final OrderRealtimeService orderRealtimeService;
 
     @Override
     @Transactional
@@ -103,6 +105,7 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.save(savedOrder);
 
         OrderResponse response = toOrderResponse(savedOrder, items);
+        orderRealtimeService.publishNewOrder(response);
         return new ResponseData<>(HttpStatus.OK.value(), "Đặt hàng thành công", response);
     }
 
@@ -143,6 +146,7 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(newStatus);
         orderRepository.save(order);
         OrderResponse response = toOrderResponse(order, orderItemRepository.findByOrder(order));
+        orderRealtimeService.publishOrderStatusUpdated(response);
         return new ResponseData<>(HttpStatus.OK.value(), "Cập nhật trạng thái đơn hàng thành công", response);
     }
 
@@ -160,6 +164,7 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(4); // Cancelled
         orderRepository.save(order);
         OrderResponse response = toOrderResponse(order, orderItemRepository.findByOrder(order));
+        orderRealtimeService.publishOrderStatusUpdated(response);
         return new ResponseData<>(HttpStatus.OK.value(), "Hủy đơn hàng thành công", response);
     }
 
