@@ -86,7 +86,23 @@ public class AuthServiceImpl implements AuthService {
         userData.put("status", Boolean.TRUE.equals(account.getStatus()) ? 1 : 0);
         userData.put("join", account.getCreatedAt());
         userData.put("cart", new ArrayList<>());
-        userData.put("userType", "ADMIN".equalsIgnoreCase(account.getRole()) ? 1 : 0);
+        userData.put("role", normalizeRole(account.getRole()));
+        userData.put("userType", resolveUserType(account.getRole()));
         return userData;
+    }
+
+    private int resolveUserType(String role) {
+        return switch (normalizeRole(role)) {
+            case "ADMIN" -> 1;
+            case "EMPLOYEE" -> 2;
+            default -> 0;
+        };
+    }
+
+    private String normalizeRole(String role) {
+        if (role == null || role.isBlank()) {
+            return "USER";
+        }
+        return role.trim().toUpperCase();
     }
 }

@@ -41,7 +41,8 @@ public class UserServiceImpl implements UserService {
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
         user.setStatus(Boolean.TRUE);
-        user.setRole("USER");
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setRole(resolveRole(user.getRole()));
 
         User savedUser = userRepository.save(user);
         return new ResponseData<>(HttpStatus.OK.value(), "Tạo khách hàng thành công", savedUser);
@@ -123,5 +124,23 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
         return new ResponseData<>(HttpStatus.OK.value(), "Đổi mật khẩu thành công",
                 Map.of("message", "Đổi mật khẩu thành công"));
+    }
+
+    @Override
+    public ResponseData<User> updateUserRole(Long id, String role) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + id));
+
+        user.setRole(resolveRole(role));
+        userRepository.save(user);
+        return new ResponseData<>(HttpStatus.OK.value(), "Cập nhật vai trò thành công", user);
+    }
+
+    private String resolveRole(String role) {
+        String normalizedRole = role == null || role.isBlank() ? "USER" : role.trim().toUpperCase();
+        if (!normalizedRole.equals("USER") && !normalizedRole.equals("EMPLOYEE") && !normalizedRole.equals("ADMIN")) {
+            throw new RuntimeException("Role không hợp lệ. Chỉ chấp nhận USER, EMPLOYEE hoặc ADMIN");
+        }
+        return normalizedRole;
     }
 }

@@ -26,4 +26,6 @@ public interface UserService {
     ResponseData<Map<String, String>> updateProfile(Map<String, String> body, String phone);
 
     ResponseData<Map<String, String>> changePassword(Map<String, String> body, String phone);
+
+    ResponseData<User> updateUserRole(Long id, String role);
 }

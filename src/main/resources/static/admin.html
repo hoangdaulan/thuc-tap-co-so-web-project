@@ -8,6 +8,7 @@
     <link href='./assets/img/favicon-congphuong.png' rel='icon' type='image/x-icon' />
     <link rel="stylesheet" href="assets/css/admin.css">
     <link rel="stylesheet" href="./assets/css/toast-message.css">
+    <link rel="stylesheet" href="./assets/css/employee-chat.css">
     <link href="./assets/font/font-awesome-pro-v6-6.2.0/css/all.min.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="./assets/css/admin-responsive.css">
     <title>Quản lý cửa hàng</title>
@@ -59,6 +60,12 @@
                         <a href="#" class="sidebar-link">
                             <div class="sidebar-icon"><i class="fa-light fa-chart-simple"></i></div>
                             <div class="hidden-sidebar">Thống kê</div>
+                        </a>
+                    </li>
+                    <li class="sidebar-list-item tab-content" id="employee-chat-tab">
+                        <a href="#" class="sidebar-link">
+                            <div class="sidebar-icon"><i class="fa-light fa-comments"></i></div>
+                            <div class="hidden-sidebar">Hỗ trợ chat</div>
                         </a>
                     </li>
                 </ul>
@@ -355,6 +362,27 @@
                     </table>
                 </div>
             </div>
+            <div class="section" id="employee-chat-section">
+                <div class="employee-chat-layout">
+                    <div class="employee-chat-sidebar">
+                        <div class="employee-chat-title">Cuộc trò chuyện cần hỗ trợ</div>
+                        <div id="employee-chat-conversations" class="employee-chat-conversations"></div>
+                    </div>
+                    <div class="employee-chat-main">
+                        <div class="employee-chat-header">
+                            <div>
+                                <h3 id="employee-chat-customer-name">Chưa chọn cuộc trò chuyện</h3>
+                                <p id="employee-chat-customer-phone">Hãy chọn khách hàng ở cột bên trái</p>
+                            </div>
+                        </div>
+                        <div id="employee-chat-messages" class="employee-chat-messages"></div>
+                        <form id="employee-chat-form" class="employee-chat-form">
+                            <textarea id="employee-chat-input" placeholder="Nhập phản hồi cho khách hàng..." rows="3"></textarea>
+                            <button type="submit">Gửi phản hồi</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
     <div class="modal add-product">
@@ -502,6 +530,7 @@
     </div>
     <div id="toast"></div>
     <script src="./js/admin.js"></script>
+    <script src="./js/employee-chat.js"></script>
     <script src="./js/toast-message.js"></script>
 </body>
 

@@ -15,6 +15,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByPhone(String username);
     Boolean existsByPhone(String phone);
+    List<User> findByRoleIgnoreCase(String role);
 
     @Query("SELECT u FROM User u WHERE " +
             "(:search IS NULL OR u.fullName LIKE %:search% OR u.email LIKE %:search% OR u.phone LIKE %:search%) AND " +
