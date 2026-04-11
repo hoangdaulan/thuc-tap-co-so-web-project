@@ -8,6 +8,17 @@
         return new Date(value).toLocaleString('vi-VN');
     }
 
+    function bindEnterToSend(textarea, form) {
+        if (!textarea || !form) return;
+
+        textarea.addEventListener('keydown', event => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                form.requestSubmit();
+            }
+        });
+    }
+
     function buildWidget() {
         if (document.querySelector('.support-chat-widget')) return;
 
@@ -38,7 +49,10 @@
             }
         });
 
-        widget.querySelector('.support-chat-form').addEventListener('submit', submitMessage);
+        const form = widget.querySelector('.support-chat-form');
+        const textarea = form.querySelector('textarea');
+        form.addEventListener('submit', submitMessage);
+        bindEnterToSend(textarea, form);
     }
 
     function ensureEmployeeEntryPoint() {

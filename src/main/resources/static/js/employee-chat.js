@@ -9,6 +9,17 @@
         return value ? new Date(value).toLocaleString('vi-VN') : '';
     }
 
+    function bindEnterToSend(textarea, form) {
+        if (!textarea || !form) return;
+
+        textarea.addEventListener('keydown', event => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                form.requestSubmit();
+            }
+        });
+    }
+
     function isEmployeeOnlyView() {
         const user = currentUser();
         return user && user.userType === 2;
@@ -178,6 +189,7 @@
         applyEmployeeLayoutRestrictions();
         const form = document.getElementById('employee-chat-form');
         if (form) {
+            bindEnterToSend(document.getElementById('employee-chat-input'), form);
             form.addEventListener('submit', submitReply);
             loadConversations();
             connectRealtime();
