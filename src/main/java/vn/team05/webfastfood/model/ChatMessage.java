@@ -26,7 +26,7 @@ public class ChatMessage extends BaseEntity {
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
-    @Column(name = "content", nullable = false, length = 1000)
+    @Column(name = "content", nullable = false, columnDefinition = "NVARCHAR(1000)")
     private String content;
 
     public Long getId() {

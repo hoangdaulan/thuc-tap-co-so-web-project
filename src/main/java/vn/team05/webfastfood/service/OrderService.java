@@ -20,7 +20,7 @@ public interface OrderService {
 
     ResponseData<List<OrderResponse>> getOrdersByStatus(Integer status);
 
-    ResponseData<OrderResponse> updateOrderStatus(Long orderId, Integer newStatus);
+    ResponseData<OrderResponse> updateOrderStatus(Long orderId, Integer newStatus, String shipperName, String shipperPhone, String employeePhone);
 
     ResponseData<OrderResponse> cancelOrder(Long orderId, String phone);
 }

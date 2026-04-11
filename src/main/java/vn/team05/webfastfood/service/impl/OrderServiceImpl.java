@@ -18,6 +18,7 @@ import vn.team05.webfastfood.repository.ProductRepository;
 import vn.team05.webfastfood.repository.UserRepository;
 import vn.team05.webfastfood.service.OrderRealtimeService;
 import vn.team05.webfastfood.service.OrderService;
+import vn.team05.webfastfood.service.SupportChatService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +38,7 @@ public class OrderServiceImpl implements OrderService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final OrderRealtimeService orderRealtimeService;
+    private final SupportChatService supportChatService;
 
     @Override
     @Transactional
@@ -137,12 +139,21 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public ResponseData<OrderResponse> updateOrderStatus(Long orderId, Integer newStatus) {
+    public ResponseData<OrderResponse> updateOrderStatus(Long orderId, Integer newStatus, String shipperName, String shipperPhone, String employeePhone) {
         if (newStatus == null) {
             throw new RuntimeException("Thiếu trường 'status'");
         }
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng: " + orderId));
+
+        if (newStatus == 2 && "delivery".equals(order.getDeliveryType())) {
+            order.setShipperName(shipperName);
+            order.setShipperPhone(shipperPhone);
+
+            String message = String.format("Đơn hàng #%d của bạn đã được xác nhận và đang được giao cho shipper %s (SĐT: %s).", order.getId(), shipperName != null ? shipperName : "", shipperPhone != null ? shipperPhone : "");
+            supportChatService.sendMessageAsEmployee(employeePhone, order.getUser().getId(), message);
+        }
+
         order.setStatus(newStatus);
         orderRepository.save(order);
         OrderResponse response = toOrderResponse(order, orderItemRepository.findByOrder(order));
@@ -197,6 +208,8 @@ public class OrderServiceImpl implements OrderService {
         res.setDeliveryAddress(order.getDeliveryAddress());
         res.setDeliveryTime(order.getDeliveryTime());
         res.setBranch(order.getBranch());
+        res.setShipperName(order.getShipperName());
+        res.setShipperPhone(order.getShipperPhone());
         res.setCreatedAt(order.getCreatedAt());
 
         List<OrderResponse.OrderItemResponse> itemResponses = new ArrayList<>();

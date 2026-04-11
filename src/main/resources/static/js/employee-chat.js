@@ -31,13 +31,17 @@
         const tabs = document.querySelectorAll('.sidebar-list .tab-content');
         const sections = document.querySelectorAll('.content .section');
         tabs.forEach((tab, index) => {
-            const isChatTab = tab.id === 'employee-chat-tab';
-            tab.style.display = isChatTab ? '' : 'none';
+            const isAllowedTab = tab.id === 'employee-chat-tab' || tab.id === 'order-tab';
+            tab.style.display = isAllowedTab ? '' : 'none';
             if (sections[index]) {
-                sections[index].style.display = isChatTab ? '' : 'none';
-                sections[index].classList.toggle('active', isChatTab);
+                sections[index].style.display = isAllowedTab ? '' : 'none';
+                // Chá»‰ tá»± Ä‘á»™ng chá»n tab chat náº¿u khĂ´ng cĂ³ tab nĂ o Ä‘ang active hoáº·c tab active bá»‹ áº©n
+                const isActiveTabVisible = document.querySelector('.sidebar-list-item.tab-content.active')?.style.display !== 'none';
+                if (!isActiveTabVisible && tab.id === 'employee-chat-tab') {
+                    tab.classList.add('active');
+                    sections[index].classList.add('active');
+                }
             }
-            tab.classList.toggle('active', isChatTab);
         });
     }
 

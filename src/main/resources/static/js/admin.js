@@ -415,6 +415,17 @@ function uploadImage(el) { previewProductImage(el); }
 // Đổi trạng thái đơn hàng qua API
 async function changeStatus(id, newStatus) {
     try {
+        let shipperName = document.getElementById('shipper-name-input') ? document.getElementById('shipper-name-input').value : null;
+        let shipperPhone = document.getElementById('shipper-phone-input') ? document.getElementById('shipper-phone-input').value : null;
+        
+        if (newStatus === 2) {
+            let isDelivery = document.getElementById('shipper-name-input') != null;
+            if (isDelivery && (!shipperName || !shipperPhone)) {
+                toast({ title: 'Cảnh báo', message: 'Vui lòng nhập đầy đủ Tên và Số điện thoại Shipper', type: 'warning', duration: 3000 });
+                return;
+            }
+        }
+
         let token = localStorage.getItem('jwtToken');
         const response = await fetch(`/api/v1/admin/orders/${id}/status`, {
             method: 'PUT',
@@ -422,10 +433,11 @@ async function changeStatus(id, newStatus) {
                 'Content-Type': 'application/json',
                 'Authorization': token ? `Bearer ${token}` : ''
             },
-            body: JSON.stringify({ status: newStatus })
+            body: JSON.stringify({ status: newStatus, shipperName: shipperName, shipperPhone: shipperPhone })
         });
         if (response.ok) {
             toast({ title: 'Thành công', message: 'Cập nhật trạng thái thành công!', type: 'success', duration: 2000 });
+            document.querySelector('.modal.detail-order').classList.remove('open');
             const resData = await response.json();
             const updatedOrder = resData.data;
             if (updatedOrder) {
@@ -494,7 +506,8 @@ function initOrderRealtime() {
         orderRealtimeSource.close();
     }
 
-    orderRealtimeSource = new EventSource('/api/v1/admin/orders/stream');
+    let token = localStorage.getItem('jwtToken');
+    orderRealtimeSource = new EventSource(`/api/v1/admin/orders/stream${token ? '?token=' + encodeURIComponent(token) : ''}`);
 
     orderRealtimeSource.onopen = function () {
         realtimeRetryDelayMs = 1500;
@@ -635,6 +648,16 @@ async function detailOrderAdmin(id) {
                 <span class="detail-order-item-left"><i class="fa-light fa-phone"></i> Số điện thoại</span>
                 <span class="detail-order-item-right">${order.recipientPhone || ''}</span>
             </li>
+            ${order.deliveryType === 'delivery' ? `
+            <li class="detail-order-item">
+                <span class="detail-order-item-left"><i class="fa-light fa-motorcycle"></i> Tên Shipper</span>
+                <span class="detail-order-item-right">${order.shipperName || 'N/A'}</span>
+            </li>
+            <li class="detail-order-item">
+                <span class="detail-order-item-left"><i class="fa-light fa-phone"></i> SĐT Shipper</span>
+                <span class="detail-order-item-right">${order.shipperPhone || 'N/A'}</span>
+            </li>
+            ` : ''}
             <li class="detail-order-item tb">
                 <span class="detail-order-item-left"><i class="fa-light fa-clock"></i> Thời gian giao</span>
                 <p class="detail-order-item-b">${order.deliveryTime ? order.deliveryTime + ' - ' : ''}${order.shippingDate ? formatDate(order.shippingDate) : ''}</p>
@@ -649,31 +672,36 @@ async function detailOrderAdmin(id) {
             </li>
         </ul>
     </div>`;
-    document.querySelector(".modal-detail-order").innerHTML = spHtml;
 
     // Nút cập nhật trạng thái
-    let statusOptions = [
-        { value: 0, label: 'Chờ xác nhận' },
-        { value: 1, label: 'Đã xác nhận' },
-        { value: 2, label: 'Đang giao' },
-        { value: 3, label: 'Hoàn thành' },
-        { value: 4, label: 'Hủy' }
-    ];
-    let selectHtml = `<select id="order-status-select" class="order-status-select">`;
-    statusOptions.forEach(opt => {
-        selectHtml += `<option value="${opt.value}" ${order.status == opt.value ? 'selected' : ''}>${opt.label}</option>`;
-    });
-    selectHtml += `</select>`;
-    document.querySelector(".modal-detail-bottom").innerHTML = `<div class="modal-detail-bottom-left">
+    let bottomHtml = `<div class="modal-detail-bottom-left">
         <div class="price-total">
             <span class="thanhtien">Thành tiền</span>
             <span class="price">${vnd(order.totalPrice || 0)}</span>
         </div>
     </div>
-    <div class="modal-detail-bottom-right">
-        ${selectHtml}
-        <button class="modal-detail-btn btn-cap-nhat" onclick="changeStatus(${order.id}, parseInt(document.getElementById('order-status-select').value))">Cập nhật</button>
-    </div>`;
+    <div class="modal-detail-bottom-right" style="display:flex; flex-direction:column; align-items:flex-end; gap: 10px;">`;
+
+    if (order.status == 0 || order.status == 1) { // Chỉ hiển thị thao tác nếu đơn chưa giao xong
+        if (order.deliveryType === 'delivery') {
+            bottomHtml += `
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <input type="text" id="shipper-name-input" placeholder="Tên Shipper" class="form-control" style="width: 150px; padding: 5px;">
+                <input type="text" id="shipper-phone-input" placeholder="SĐT Shipper" class="form-control" style="width: 150px; padding: 5px;">
+            </div>`;
+        }
+        bottomHtml += `
+        <div style="display: flex; gap: 10px;">
+            <button class="modal-detail-btn btn-cap-nhat" style="background-color: #f44336;" onclick="changeStatus(${order.id}, 4)">Hủy đơn</button>
+            <button class="modal-detail-btn btn-cap-nhat" onclick="changeStatus(${order.id}, 2)">Xác nhận đơn</button>
+        </div>`;
+    } else {
+         bottomHtml += `<span class="status-complete">Đơn hàng đã được xử lý</span>`;
+    }
+    bottomHtml += `</div>`;
+
+    document.querySelector(".modal-detail-order").innerHTML = spHtml;
+    document.querySelector(".modal-detail-bottom").innerHTML = bottomHtml;
 }
 
 // Find Order

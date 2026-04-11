@@ -55,6 +55,12 @@ public class Order extends BaseEntity {
     @Column(name = "branch")
     private String branch;
 
+    @Column(name = "shipper_name")
+    private String shipperName;
+
+    @Column(name = "shipper_phone")
+    private String shipperPhone;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<OrderItem> items;
 }

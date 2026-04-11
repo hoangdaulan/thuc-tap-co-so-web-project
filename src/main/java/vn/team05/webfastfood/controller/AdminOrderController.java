@@ -3,6 +3,7 @@ package vn.team05.webfastfood.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import vn.team05.webfastfood.dto.response.OrderResponse;
@@ -23,6 +24,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/admin/orders")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
 public class AdminOrderController {
 
     private final OrderService orderService;
@@ -61,9 +63,13 @@ public class AdminOrderController {
     @PutMapping("/{id}/status")
     public ResponseEntity<ResponseData<OrderResponse>> updateOrderStatus(
             @PathVariable Long id,
-            @RequestBody Map<String, Integer> body) {
-        Integer newStatus = body.get("status");
-        ResponseData<OrderResponse> responseData = orderService.updateOrderStatus(id, newStatus);
+            @RequestBody Map<String, Object> body,
+            org.springframework.security.core.Authentication authentication) {
+        Integer newStatus = body.containsKey("status") ? Integer.parseInt(body.get("status").toString()) : null;
+        String shipperName = body.containsKey("shipperName") ? body.get("shipperName").toString() : null;
+        String shipperPhone = body.containsKey("shipperPhone") ? body.get("shipperPhone").toString() : null;
+        String employeePhone = authentication != null ? authentication.getName() : null;
+        ResponseData<OrderResponse> responseData = orderService.updateOrderStatus(id, newStatus, shipperName, shipperPhone, employeePhone);
         return ResponseEntity.ok(responseData);
     }
 }

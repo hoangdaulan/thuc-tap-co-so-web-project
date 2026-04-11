@@ -18,6 +18,8 @@ public class OrderResponse {
     private String deliveryAddress;
     private String deliveryTime;
     private String branch;
+    private String shipperName;
+    private String shipperPhone;
     private LocalDateTime createdAt;
     private List<OrderItemResponse> items;
 
@@ -72,6 +74,10 @@ public class OrderResponse {
     public void setDeliveryTime(String deliveryTime) { this.deliveryTime = deliveryTime; }
     public String getBranch() { return branch; }
     public void setBranch(String branch) { this.branch = branch; }
+    public String getShipperName() { return shipperName; }
+    public void setShipperName(String shipperName) { this.shipperName = shipperName; }
+    public String getShipperPhone() { return shipperPhone; }
+    public void setShipperPhone(String shipperPhone) { this.shipperPhone = shipperPhone; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public List<OrderItemResponse> getItems() { return items; }
