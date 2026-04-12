@@ -25,6 +25,7 @@ public class SupportChatServiceImpl implements SupportChatService {
     private final ChatRealtimeService chatRealtimeService;
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseData<List<ChatMessageResponse>> getMyMessages(String phone) {
         User customer = getUserByPhone(phone);
         List<ChatMessageResponse> messages = chatMessageRepository.findByCustomerIdOrderByCreatedAtAsc(customer.getId())
@@ -52,6 +53,7 @@ public class SupportChatServiceImpl implements SupportChatService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseData<List<ChatConversationResponse>> getAllConversations() {
         List<ChatConversationResponse> conversations = chatMessageRepository.findLatestMessagesForEachConversation()
                 .stream()
@@ -61,6 +63,7 @@ public class SupportChatServiceImpl implements SupportChatService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseData<List<ChatMessageResponse>> getConversationMessages(Long customerId) {
         List<ChatMessageResponse> messages = chatMessageRepository.findByCustomerIdOrderByCreatedAtAsc(customerId)
                 .stream()

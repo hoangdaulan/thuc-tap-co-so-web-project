@@ -17,6 +17,8 @@ public interface UserService {
 
     ResponseData<User> createCustomer(User user);
 
+    ResponseData<User> updateUser(Long id, User user);
+
     ResponseData<String> deleteUser(Long id);
 
     ResponseData<List<User>> filterUsers(String search, Boolean status, String startDate, String endDate);

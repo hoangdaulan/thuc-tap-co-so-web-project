@@ -50,6 +50,12 @@
                             <div class="hidden-sidebar">Khách hàng</div>
                         </a>
                     </li>
+                    <li class="sidebar-list-item tab-content">
+                        <a href="#" class="sidebar-link">
+                            <div class="sidebar-icon"><i class="fa-light fa-user-tie"></i></div>
+                            <div class="hidden-sidebar">Nhân viên</div>
+                        </a>
+                    </li>
                     <li class="sidebar-list-item tab-content" id="order-tab">
                         <a href="#" class="sidebar-link">
                             <div class="sidebar-icon"><i class="fa-light fa-basket-shopping"></i></div>
@@ -173,16 +179,16 @@
             <div class="section">
                 <div class="admin-control">
                     <div class="admin-control-left">
-                        <select name="tinh-trang-user" id="tinh-trang-user" onchange="loadCustomersFromApi()">
+                        <select name="tinh-trang-customer" id="tinh-trang-customer">
                             <option value="2">Tất cả</option>
                             <option value="1">Hoạt động</option>
                             <option value="0">Bị khóa</option>
                         </select>
                     </div>
                     <div class="admin-control-center">
-                        <form action="" class="form-search" onsubmit="event.preventDefault(); searchCustomer();">
+                        <form action="" class="form-search" onsubmit="event.preventDefault();">
                             <span class="search-btn"><i class="fa-light fa-magnifying-glass"></i></span>
-                            <input id="form-search-user" type="text" class="form-search-input"
+                            <input id="form-search-customer" type="text" class="form-search-input"
                                 placeholder="Tìm kiếm khách hàng..." oninput="searchCustomer()">
                         </form>
                     </div>
@@ -190,16 +196,16 @@
                         <form action="" class="fillter-date">
                             <div>
                                 <label for="time-start">Từ</label>
-                                <input type="date" class="form-control-date" id="time-start-user">
+                                <input type="date" class="form-control-date" id="time-start-customer">
                             </div>
                             <div>
                                 <label for="time-end">Đến</label>
-                                <input type="date" class="form-control-date" id="time-end-user">
+                                <input type="date" class="form-control-date" id="time-end-customer">
                             </div>
                         </form>
-                        <button class="btn-reset-order" onclick="cancelSearchUser()"><i
+                        <button class="btn-reset-order" onclick="cancelSearchCustomer()"><i
                                 class="fa-light fa-arrow-rotate-right"></i></button>
-                        <button id="btn-add-user" class="btn-control-large" onclick="openCreateAccount()"><i
+                        <button id="btn-add-customer" class="btn-control-large" onclick="openCreateAccount('USER')"><i
                                 class="fa-light fa-plus"></i> <span>Thêm khách hàng</span></button>
                     </div>
                 </div>
@@ -217,9 +223,70 @@
                                 <td>Thao tác</td>
                             </tr>
                         </thead>
-                        <tbody id="show-user">
+                        <tbody id="show-customer">
                             <tr>
-                                <td colspan="6" style="text-align:center;">Đang tải dữ liệu...</td>
+                                <td colspan="8" style="text-align:center;">Đang tải dữ liệu...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="section">
+                <div class="admin-control">
+                    <div class="admin-control-left" style="display:flex; gap:12px;">
+                        <select name="tinh-trang-employee" id="tinh-trang-employee">
+                            <option value="2">Tất cả</option>
+                            <option value="1">Hoạt động</option>
+                            <option value="0">Bị khóa</option>
+                        </select>
+                        <select name="role-employee" id="role-employee">
+                            <option value="ALL">Tất cả vai trò</option>
+                            <option value="EMPLOYEE">Nhân viên</option>
+                            <option value="SHIPPER">Shipper</option>
+                        </select>
+                    </div>
+                    <div class="admin-control-center">
+                        <form action="" class="form-search" onsubmit="event.preventDefault();">
+                            <span class="search-btn"><i class="fa-light fa-magnifying-glass"></i></span>
+                            <input id="form-search-employee" type="text" class="form-search-input"
+                                placeholder="Tìm kiếm nhân viên..." oninput="searchEmployee()">
+                        </form>
+                    </div>
+                    <div class="admin-control-right">
+                        <form action="" class="fillter-date">
+                            <div>
+                                <label for="time-start">Từ</label>
+                                <input type="date" class="form-control-date" id="time-start-employee">
+                            </div>
+                            <div>
+                                <label for="time-end">Đến</label>
+                                <input type="date" class="form-control-date" id="time-end-employee">
+                            </div>
+                        </form>
+                        <button class="btn-reset-order" onclick="cancelSearchEmployee()"><i
+                                class="fa-light fa-arrow-rotate-right"></i></button>
+                        <button id="btn-add-employee" class="btn-control-large" onclick="openCreateAccount('EMPLOYEE')"><i
+                                class="fa-light fa-plus"></i> <span>Thêm nhân viên</span></button>
+                    </div>
+                </div>
+                <div class="table">
+                    <table width="100%">
+                        <thead>
+                            <tr>
+                                <td>STT</td>
+                                <td>Họ và tên</td>
+                                <td>Vai trò</td>
+                                <td>Liên hệ (SĐT)</td>
+                                <td>Ngày tham gia</td>
+                                <td>Địa chỉ</td>
+                                <td>Email</td>
+                                <td>Tình trạng</td>
+                                <td>Thao tác</td>
+                            </tr>
+                        </thead>
+                        <tbody id="show-employee">
+                            <tr>
+                                <td colspan="9" style="text-align:center;">Đang tải dữ liệu...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -480,7 +547,7 @@
     </div>
     <div class="modal signup">
         <div class="modal-container">
-            <h3 class="modal-container-title add-account-e">THÊM KHÁCH HÀNG MỚI</h3>
+            <h3 class="modal-container-title add-account-e" id="account-modal-title">THÊM KHÁCH HÀNG MỚI</h3>
             <h3 class="modal-container-title edit-account-e">CHỈNH SỬA THÔNG TIN</h3>
             <button class="modal-close"><i class="fa-regular fa-xmark"></i></button>
             <div class="form-content sign-up">
@@ -505,7 +572,7 @@
                     </div>
                     <div class="form-group">
                         <label for="address" class="form-label">Địa chỉ</label>
-                        <input id="address" name="address" type="text" placeholder="Nhập địa chỉ" class="form-control">"
+                        <input id="address" name="address" type="text" placeholder="Nhập địa chỉ" class="form-control">
                         <span class="form-message-address form-message"></span>
                     </div>
                     <div class="form-group">
@@ -513,12 +580,19 @@
                         <input id="email" name="email" type="text" placeholder="Nhập email" class="form-control">
                         <span class="form-message-email form-message"></span>
                     </div>
+                    <div class="form-group add-account-e" id="account-role-group" style="display:none;">
+                        <label for="account-role" class="form-label">Vai trò</label>
+                        <select id="account-role" class="form-control">
+                            <option value="EMPLOYEE">Nhân viên</option>
+                            <option value="SHIPPER">Shipper</option>
+                        </select>
+                    </div>
                     <div class="form-group edit-account-e">
                         <label for="" class="form-label">Trạng thái</label>
                         <input type="checkbox" id="user-status" class="switch-input">
                         <label for="user-status" class="switch"></label>
                     </div>
-                    <button class="form-submit add-account-e" id="signup-button">Đăng ký</button>
+                    <button class="form-submit add-account-e" id="signup-button">Tạo tài khoản</button>
                     <button class="form-submit edit-account-e" id="btn-update-account"><i
                             class="fa-regular fa-floppy-disk"></i> Lưu thông tin</button>
                 </form>

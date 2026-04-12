@@ -49,6 +49,39 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public ResponseData<User> updateUser(Long id, User request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + id));
+
+        String fullName = request.getFullName() != null ? request.getFullName().trim() : "";
+        String phone = request.getPhone() != null ? request.getPhone().trim() : "";
+        if (fullName.isBlank() || phone.isBlank()) {
+            throw new RuntimeException("Họ tên và số điện thoại không được để trống");
+        }
+
+        userRepository.findByPhone(phone)
+                .filter(existing -> !existing.getId().equals(id))
+                .ifPresent(existing -> {
+                    throw new RuntimeException("Số điện thoại này đã được đăng ký!");
+                });
+
+        user.setFullName(fullName);
+        user.setPhone(phone);
+        user.setEmail(request.getEmail() != null ? request.getEmail().trim() : null);
+        user.setAddress(request.getAddress() != null ? request.getAddress().trim() : null);
+        user.setStatus(request.getStatus() != null ? request.getStatus() : user.getStatus());
+        user.setRole(request.getRole() != null ? resolveRole(request.getRole()) : user.getRole());
+        user.setUpdatedAt(LocalDateTime.now());
+
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(request.getPassword().trim()));
+        }
+
+        User updatedUser = userRepository.save(user);
+        return new ResponseData<>(HttpStatus.OK.value(), "Cập nhật người dùng thành công", updatedUser);
+    }
+
+    @Override
     public ResponseData<String> deleteUser(Long id) {
         if (!userRepository.existsById(id)) {
             throw new RuntimeException("Không tìm thấy khách hàng với ID: " + id);
@@ -138,8 +171,9 @@ public class UserServiceImpl implements UserService {
 
     private String resolveRole(String role) {
         String normalizedRole = role == null || role.isBlank() ? "USER" : role.trim().toUpperCase();
-        if (!normalizedRole.equals("USER") && !normalizedRole.equals("EMPLOYEE") && !normalizedRole.equals("ADMIN")) {
-            throw new RuntimeException("Role không hợp lệ. Chỉ chấp nhận USER, EMPLOYEE hoặc ADMIN");
+        if (!normalizedRole.equals("USER") && !normalizedRole.equals("EMPLOYEE")
+                && !normalizedRole.equals("SHIPPER") && !normalizedRole.equals("ADMIN")) {
+            throw new RuntimeException("Role không hợp lệ. Chỉ chấp nhận USER, EMPLOYEE, SHIPPER hoặc ADMIN");
         }
         return normalizedRole;
     }
