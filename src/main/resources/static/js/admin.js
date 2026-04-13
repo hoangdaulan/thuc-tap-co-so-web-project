@@ -412,6 +412,186 @@ function previewProductImage(input) {
 // Giữ lại hàm cũ để tránh lỗi nếu còn reference
 function uploadImage(el) { previewProductImage(el); }
 
+let shipperAutocompleteState = {
+    typedName: '',
+    typedPhone: '',
+    selectedId: null
+};
+
+function getAvailableShippers() {
+    return allUsersCache.filter(user =>
+        normalizeUserRole(user.role) === 'SHIPPER' && Boolean(user.status)
+    );
+}
+
+function findShipperById(id) {
+    return getAvailableShippers().find(user => user.id === id) || null;
+}
+
+function getMatchingShippers(keyword) {
+    const normalizedKeyword = (keyword || '').trim().toLowerCase();
+    const shippers = getAvailableShippers();
+    if (!normalizedKeyword) {
+        return shippers.slice(0, 8);
+    }
+
+    return shippers
+        .filter(user => (user.fullName || '').toLowerCase().includes(normalizedKeyword))
+        .slice(0, 8);
+}
+
+function applyShipperToInputs(shipper) {
+    const nameInput = document.getElementById('shipper-name-input');
+    const phoneInput = document.getElementById('shipper-phone-input');
+    if (!nameInput || !phoneInput || !shipper) return;
+
+    nameInput.value = shipper.fullName || '';
+    phoneInput.value = shipper.phone || '';
+}
+
+function restoreShipperInputState() {
+    const selectedShipper = shipperAutocompleteState.selectedId
+        ? findShipperById(shipperAutocompleteState.selectedId)
+        : null;
+
+    if (selectedShipper) {
+        applyShipperToInputs(selectedShipper);
+        return;
+    }
+
+    const nameInput = document.getElementById('shipper-name-input');
+    const phoneInput = document.getElementById('shipper-phone-input');
+    if (nameInput) nameInput.value = shipperAutocompleteState.typedName || '';
+    if (phoneInput) phoneInput.value = shipperAutocompleteState.typedPhone || '';
+}
+
+function hideShipperSuggestions() {
+    const container = document.getElementById('shipper-suggestions');
+    if (container) {
+        container.innerHTML = '';
+        container.classList.remove('open');
+    }
+}
+
+function previewShipperSuggestion(shipperId) {
+    const shipper = findShipperById(shipperId);
+    if (shipper) {
+        applyShipperToInputs(shipper);
+    }
+}
+
+function selectShipperSuggestion(shipperId) {
+    const shipper = findShipperById(shipperId);
+    if (!shipper) return;
+
+    shipperAutocompleteState.selectedId = shipper.id;
+    shipperAutocompleteState.typedName = shipper.fullName || '';
+    shipperAutocompleteState.typedPhone = shipper.phone || '';
+    applyShipperToInputs(shipper);
+    hideShipperSuggestions();
+}
+
+function renderShipperSuggestions(keyword) {
+    const container = document.getElementById('shipper-suggestions');
+    if (!container) return;
+
+    const suggestions = getMatchingShippers(keyword);
+    if (!suggestions.length) {
+        container.innerHTML = `<div class="shipper-suggestion-empty">KhĂ´ng tĂ¬m tháº¥y shipper phĂ¹ há»£p</div>`;
+        container.classList.add('open');
+        return;
+    }
+
+    container.innerHTML = suggestions.map(shipper => `
+        <button type="button"
+            class="shipper-suggestion-item"
+            data-shipper-id="${shipper.id}"
+            onmouseenter="previewShipperSuggestion(${shipper.id})"
+            onclick="selectShipperSuggestion(${shipper.id})">
+            <span class="shipper-suggestion-name">${shipper.fullName || 'ChÆ°a cĂ³ tĂªn'}</span>
+            <span class="shipper-suggestion-phone">${shipper.phone || ''}</span>
+        </button>
+    `).join('');
+    container.classList.add('open');
+}
+
+function initializeShipperAutocomplete(order) {
+    const nameInput = document.getElementById('shipper-name-input');
+    const phoneInput = document.getElementById('shipper-phone-input');
+    if (!nameInput || !phoneInput) return;
+
+    let autocompleteRoot = document.getElementById('shipper-autocomplete');
+    let suggestionBox = document.getElementById('shipper-suggestions');
+
+    if (!autocompleteRoot) {
+        const currentRow = nameInput.parentElement;
+        autocompleteRoot = document.createElement('div');
+        autocompleteRoot.id = 'shipper-autocomplete';
+        autocompleteRoot.className = 'shipper-autocomplete';
+        currentRow.parentNode.insertBefore(autocompleteRoot, currentRow);
+        autocompleteRoot.appendChild(currentRow);
+        currentRow.classList.add('shipper-autocomplete-row');
+    }
+
+    nameInput.classList.add('shipper-input');
+    phoneInput.classList.add('shipper-input');
+    phoneInput.setAttribute('readonly', 'readonly');
+
+    if (!suggestionBox) {
+        suggestionBox = document.createElement('div');
+        suggestionBox.id = 'shipper-suggestions';
+        suggestionBox.className = 'shipper-suggestions';
+        autocompleteRoot.appendChild(suggestionBox);
+    }
+
+    shipperAutocompleteState = {
+        typedName: order?.shipperName || '',
+        typedPhone: order?.shipperPhone || '',
+        selectedId: null
+    };
+
+    const matchedShipper = getAvailableShippers().find(user =>
+        (order?.shipperPhone && user.phone === order.shipperPhone)
+        || (order?.shipperName && user.fullName === order.shipperName)
+    );
+    if (matchedShipper) {
+        shipperAutocompleteState.selectedId = matchedShipper.id;
+        shipperAutocompleteState.typedName = matchedShipper.fullName || '';
+        shipperAutocompleteState.typedPhone = matchedShipper.phone || '';
+    }
+
+    restoreShipperInputState();
+
+    nameInput.addEventListener('input', () => {
+        shipperAutocompleteState.selectedId = null;
+        shipperAutocompleteState.typedName = nameInput.value.trim();
+        shipperAutocompleteState.typedPhone = '';
+        phoneInput.value = '';
+        renderShipperSuggestions(nameInput.value);
+    });
+
+    nameInput.addEventListener('focus', () => {
+        renderShipperSuggestions(nameInput.value);
+    });
+
+    suggestionBox.addEventListener('mouseleave', () => {
+        restoreShipperInputState();
+    });
+
+    document.addEventListener('click', function handleOutsideClick(event) {
+        const autocompleteRoot = document.getElementById('shipper-autocomplete');
+        if (!autocompleteRoot) {
+            document.removeEventListener('click', handleOutsideClick);
+            return;
+        }
+        if (!autocompleteRoot.contains(event.target)) {
+            hideShipperSuggestions();
+            restoreShipperInputState();
+            document.removeEventListener('click', handleOutsideClick);
+        }
+    });
+}
+
 // Đổi trạng thái đơn hàng qua API
 async function changeStatus(id, newStatus) {
     try {
@@ -702,6 +882,9 @@ async function detailOrderAdmin(id) {
 
     document.querySelector(".modal-detail-order").innerHTML = spHtml;
     document.querySelector(".modal-detail-bottom").innerHTML = bottomHtml;
+    if ((order.status == 0 || order.status == 1) && order.deliveryType === 'delivery') {
+        initializeShipperAutocomplete(order);
+    }
 }
 
 // Find Order
