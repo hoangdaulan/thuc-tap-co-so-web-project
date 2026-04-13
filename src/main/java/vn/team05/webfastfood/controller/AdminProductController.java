@@ -73,4 +73,16 @@ public class AdminProductController {
         ResponseData<Product> responseData = productService.softDeleteProduct(id);
         return ResponseEntity.ok(responseData);
     }
+
+    /**
+     * PATCH /api/v1/admin/products/{id}/availability
+     * Cập nhật trạng thái Còn món (1) / Hết món (2).
+     */
+    @PatchMapping("/{id}/availability")
+    public ResponseEntity<ResponseData<Product>> updateAvailability(
+            @PathVariable Long id,
+            @RequestParam("status") Integer status) {
+        ResponseData<Product> responseData = productService.updateProductAvailability(id, status);
+        return ResponseEntity.ok(responseData);
+    }
 }

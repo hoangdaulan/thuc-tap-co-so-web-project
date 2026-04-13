@@ -128,7 +128,19 @@ function showProductArr(arr) {
                     : `./assets/img/products/${product.image}`)
                 : './assets/img/blank-image.png';
             let categoryName = product.category ? product.category.name : '';
-            let btnCtl = (product.status == null || product.status == 1) ?
+            let isDeleted = product.status == 0;
+            let currentStatus = product.status == null ? 1 : product.status;
+            let statusBtnText = currentStatus == 1 ? "Còn món" : "Hết món";
+            let nextStatus = currentStatus == 1 ? 2 : 1;
+            let btnColor = currentStatus == 1 ? "#4CAF50" : "#f44336";
+            
+            let statusSelect = !isDeleted ? `
+              <button style="padding: 5px 10px; border-radius: 4px; border: none; margin-right: 5px; cursor: pointer; color: white; font-weight: bold; background-color: ${btnColor};" onclick="changeProductAvailability(${product.id}, ${nextStatus})">
+                 ${statusBtnText}
+              </button>
+            ` : `<span style="padding: 5px; margin-right: 5px; color: red;">Đã xóa</span>`;
+
+            let btnCtl = !isDeleted ?
                 `<button class="btn-delete" onclick="deleteProductApi(${product.id})"><i class="fa-regular fa-trash"></i></button>` :
                 `<button class="btn-delete" onclick="restoreProductApi(${product.id})"><i class="fa-regular fa-eye"></i></button>`;
             productHtml += `
@@ -146,7 +158,8 @@ function showProductArr(arr) {
                     <span class="list-current-price">${vnd(product.price || 0)}</span>
                     </div>
                     <div class="list-control">
-                    <div class="list-tool">
+                    <div class="list-tool" style="display: flex; align-items: center;">
+                        ${statusSelect}
                         <button class="btn-edit" onclick="editProduct(${product.id})"><i class="fa-light fa-pen-to-square"></i></button>
                         ${btnCtl}
                     </div>
@@ -195,12 +208,12 @@ function showProduct() {
 
     let result;
     if (selectOp == "Tất cả") {
-        result = allProductsCache.filter((item) => item.status == 1 || item.status == null);
+        result = allProductsCache.filter((item) => item.status == 1 || item.status == 2 || item.status == null);
     } else if (selectOp == "Đã xóa") {
         result = allProductsCache.filter((item) => item.status == 0);
     } else {
         // Lọc theo tên category
-        result = allProductsCache.filter((item) => item.category && item.category.name == selectOp);
+        result = allProductsCache.filter((item) => item.category && item.category.name == selectOp && item.status != 0);
     }
 
     result = valeSearchInput == "" ? result : result.filter(item => {
@@ -238,6 +251,26 @@ async function deleteProductApi(id) {
 // (legacy) giữ lại để không lỗi nếu còn reference cũ
 function deleteProduct(id) { deleteProductApi(id); }
 function changeStatusProduct(id) { loadProductsFromApi(); }
+
+// Đổi trạng thái Còn món / Hết món
+async function changeProductAvailability(id, newStatus) {
+    try {
+        let rs = await fetch(`/api/v1/admin/products/${id}/availability?status=${newStatus}`, { method: 'PATCH' });
+        if (rs.ok) {
+            toast({ title: 'Thành công', message: 'Cập nhật trạng thái thành công!', type: 'success', duration: 3000 });
+            await loadProductsFromApi();
+        } else {
+            let errMsg = await rs.text();
+            try {
+                let errObj = JSON.parse(errMsg);
+                errMsg = errObj.message || errMsg;
+            } catch (e) {}
+            toast({ title: 'Lỗi', message: errMsg || 'Không thể cập nhật trạng thái', type: 'error', duration: 3000 });
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
 
 var indexCur;
 function editProduct(id) {
