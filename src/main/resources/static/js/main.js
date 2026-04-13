@@ -477,7 +477,8 @@ function checkAdmin() {
     let user = JSON.parse(localStorage.getItem('currentuser'));
     if (user && user.userType > 0) {
         let node = document.createElement(`li`);
-        node.innerHTML = `<a href="./admin.html"><i class="fa-light fa-gear"></i> Quản lý cửa hàng</a>`
+        let linkText = (user.role && user.role.toUpperCase() === 'SHIPPER') ? 'Đơn hàng giao của bạn' : 'Quản lý cửa hàng';
+        node.innerHTML = `<a href="./admin.html"><i class="fa-light fa-gear"></i> ${linkText}</a>`
         document.querySelector('.header-middle-right-menu').prepend(node);
     }
 }

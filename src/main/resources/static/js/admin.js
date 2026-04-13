@@ -70,7 +70,11 @@ function configureShipperDashboard() {
     const employeeChatSection = document.getElementById('employee-chat-section');
     if (employeeChatTab) employeeChatTab.style.display = 'none';
     if (employeeChatSection) employeeChatSection.style.display = 'none';
-
+    const orderTabLabel = document.querySelector('#order-tab .hidden-sidebar');
+    if (orderTabLabel) {
+        orderTabLabel.textContent = 'Đơn hàng cần giao đi';
+    }
+    document.title = 'Đơn hàng giao của bạn';
     const pageTitle = document.querySelector('.section:nth-child(5) .admin-control-center .form-search-input');
     if (pageTitle) {
         pageTitle.placeholder = 'Tim kiem ma don, nguoi nhan...';
@@ -652,7 +656,7 @@ async function changeStatus(id, newStatus) {
     try {
         let shipperName = document.getElementById('shipper-name-input') ? document.getElementById('shipper-name-input').value : null;
         let shipperPhone = document.getElementById('shipper-phone-input') ? document.getElementById('shipper-phone-input').value : null;
-        
+
         if (!isShipperDashboard() && newStatus === 2) {
             let isDelivery = document.getElementById('shipper-name-input') != null;
             if (isDelivery && (!shipperName || !shipperPhone)) {
