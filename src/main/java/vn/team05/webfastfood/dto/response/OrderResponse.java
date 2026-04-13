@@ -21,6 +21,8 @@ public class OrderResponse {
     private String shipperName;
     private String shipperPhone;
     private LocalDateTime createdAt;
+    private String couponCode;
+    private Double discountAmount;
     private List<OrderItemResponse> items;
 
     public static class OrderItemResponse {
@@ -80,6 +82,10 @@ public class OrderResponse {
     public void setShipperPhone(String shipperPhone) { this.shipperPhone = shipperPhone; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public String getCouponCode() { return couponCode; }
+    public void setCouponCode(String couponCode) { this.couponCode = couponCode; }
+    public Double getDiscountAmount() { return discountAmount; }
+    public void setDiscountAmount(Double discountAmount) { this.discountAmount = discountAmount; }
     public List<OrderItemResponse> getItems() { return items; }
     public void setItems(List<OrderItemResponse> items) { this.items = items; }
 }

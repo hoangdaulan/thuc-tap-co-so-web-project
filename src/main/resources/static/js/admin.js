@@ -417,7 +417,7 @@ async function changeStatus(id, newStatus) {
     try {
         let shipperName = document.getElementById('shipper-name-input') ? document.getElementById('shipper-name-input').value : null;
         let shipperPhone = document.getElementById('shipper-phone-input') ? document.getElementById('shipper-phone-input').value : null;
-        
+
         if (newStatus === 2) {
             let isDelivery = document.getElementById('shipper-name-input') != null;
             if (isDelivery && (!shipperName || !shipperPhone)) {
@@ -696,7 +696,7 @@ async function detailOrderAdmin(id) {
             <button class="modal-detail-btn btn-cap-nhat" onclick="changeStatus(${order.id}, 2)">Xác nhận đơn</button>
         </div>`;
     } else {
-         bottomHtml += `<span class="status-complete">Đơn hàng đã được xử lý</span>`;
+        bottomHtml += `<span class="status-complete">Đơn hàng đã được xử lý</span>`;
     }
     bottomHtml += `</div>`;
 
@@ -1373,6 +1373,120 @@ function bindAccountModalActions() {
     };
 }
 
+// ============================================================
+// COUPON MANAGEMENT
+// ============================================================
+let allCouponsCache = [];
+
+async function loadCoupons() {
+    try {
+        const response = await fetch('/api/v1/coupons');
+        if (!response.ok) throw new Error('Không thể tải danh sách mã giảm giá');
+        const resData = await response.json();
+        allCouponsCache = resData.data || [];
+        renderCouponTable(allCouponsCache);
+    } catch (error) {
+        console.error('Lỗi tải mã giảm giá:', error);
+        document.getElementById('show-coupon').innerHTML = `<tr><td colspan="5" style="text-align:center;color:red;">Không thể tải dữ liệu</td></tr>`;
+    }
+}
+
+function renderCouponTable(list) {
+    const tbody = document.getElementById('show-coupon');
+    if (!list || list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Chưa có mã giảm giá nào</td></tr>`;
+        return;
+    }
+    let html = '';
+    list.forEach((c, i) => {
+        const status = c.isActive
+            ? `<span class="status-complete">Hoạt động</span>`
+            : `<span class="status-cancelled">Không hoạt động</span>`;
+        const expiry = c.expirationDate
+            ? new Date(c.expirationDate).toLocaleDateString('vi-VN')
+            : 'Không giới hạn';
+        html += `
+        <tr>
+            <td>${i + 1}</td>
+            <td><strong>${c.code}</strong></td>
+            <td>Giảm <strong>${c.discountPercentage}%</strong> (hạn: ${expiry})</td>
+            <td>${status}</td>
+            <td class="control">
+                <button class="btn-edit" onclick="openEditCoupon(${c.id})"><i class="fa-light fa-pen-to-square"></i></button>
+                <button class="btn-delete" onclick="deleteCoupon(${c.id})"><i class="fa-regular fa-trash"></i></button>
+            </td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+}
+
+function openCreateCoupon() {
+    document.getElementById('coupon-id').value = '';
+    document.getElementById('coupon-code').value = '';
+    document.getElementById('coupon-discount').value = '';
+    document.getElementById('coupon-days').value = '';
+    document.getElementById('coupon-status').checked = true;
+    document.querySelector('.add-coupon-title').innerText = 'THÊM MÃ GIẢM GIÁ MỚI';
+    document.querySelector('.coupon-modal').classList.add('open');
+}
+
+function openEditCoupon(id) {
+    const c = allCouponsCache.find(x => x.id == id);
+    if (!c) return;
+    document.getElementById('coupon-id').value = c.id;
+    document.getElementById('coupon-code').value = c.code;
+    document.getElementById('coupon-discount').value = c.discountPercentage;
+    document.getElementById('coupon-days').value = '';
+    document.getElementById('coupon-status').checked = !!c.isActive;
+    document.querySelector('.add-coupon-title').innerText = 'CHỈNH SỬA MÃ GIẢM GIÁ';
+    document.querySelector('.coupon-modal').classList.add('open');
+}
+
+async function deleteCoupon(id) {
+    if (!confirm('Bạn có chắc muốn xóa mã giảm giá này?')) return;
+    try {
+        const res = await fetch(`/api/v1/coupons/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            toast({ title: 'Thành công', message: 'Đã xóa mã giảm giá!', type: 'success', duration: 2000 });
+            loadCoupons();
+        } else {
+            toast({ title: 'Lỗi', message: 'Không thể xóa mã giảm giá!', type: 'error', duration: 3000 });
+        }
+    } catch (e) {
+        toast({ title: 'Lỗi', message: 'Lỗi kết nối server!', type: 'error', duration: 3000 });
+    }
+}
+
+document.getElementById('coupon-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const id = document.getElementById('coupon-id').value;
+    const body = {
+        code: document.getElementById('coupon-code').value.trim(),
+        discountPercentage: parseInt(document.getElementById('coupon-discount').value),
+        daysValid: parseInt(document.getElementById('coupon-days').value) || 0,
+        isActive: document.getElementById('coupon-status').checked
+    };
+    try {
+        const url = id ? `/api/v1/coupons/${id}` : '/api/v1/coupons';
+        const method = id ? 'PUT' : 'POST';
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        if (res.ok) {
+            toast({ title: 'Thành công', message: id ? 'Cập nhật mã thành công!' : 'Thêm mã thành công!', type: 'success', duration: 2000 });
+            document.querySelector('.coupon-modal').classList.remove('open');
+            loadCoupons();
+        } else {
+            const err = await res.json();
+            toast({ title: 'Lỗi', message: err.message || 'Thao tác thất bại!', type: 'error', duration: 3000 });
+        }
+    } catch (e) {
+        toast({ title: 'Lỗi', message: 'Lỗi kết nối server!', type: 'error', duration: 3000 });
+    }
+});
+
 window.onload = function () {
     checkLogin();
     showUser();
@@ -1382,6 +1496,7 @@ window.onload = function () {
     loadProductsFromApi();
     loadOrdersFromApi(); // Load đơn hàng từ API backend
     initOrderRealtime();
+    loadCoupons();
 };
 
 window.addEventListener('beforeunload', function () {

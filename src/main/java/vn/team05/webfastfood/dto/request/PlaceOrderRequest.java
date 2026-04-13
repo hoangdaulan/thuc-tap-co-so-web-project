@@ -13,6 +13,7 @@ public class PlaceOrderRequest {
     private String deliveryAddress;
     private String deliveryTime; // e.g. "08:00", "Giao ngay khi xong"
     private String branch; // chi nhánh (nếu tự đến lấy)
+    private String couponCode;
     private List<OrderItemRequest> items;
 
     public static class OrderItemRequest {
@@ -56,6 +57,9 @@ public class PlaceOrderRequest {
 
     public String getBranch() { return branch; }
     public void setBranch(String branch) { this.branch = branch; }
+
+    public String getCouponCode() { return couponCode; }
+    public void setCouponCode(String couponCode) { this.couponCode = couponCode; }
 
     public List<OrderItemRequest> getItems() { return items; }
     public void setItems(List<OrderItemRequest> items) { this.items = items; }

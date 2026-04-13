@@ -16,6 +16,8 @@ import vn.team05.webfastfood.repository.OrderItemRepository;
 import vn.team05.webfastfood.repository.OrderRepository;
 import vn.team05.webfastfood.repository.ProductRepository;
 import vn.team05.webfastfood.repository.UserRepository;
+import vn.team05.webfastfood.repository.CouponRepository;
+import vn.team05.webfastfood.model.Coupon;
 import vn.team05.webfastfood.service.OrderRealtimeService;
 import vn.team05.webfastfood.service.OrderService;
 import vn.team05.webfastfood.service.SupportChatService;
@@ -39,6 +41,7 @@ public class OrderServiceImpl implements OrderService {
     private final UserRepository userRepository;
     private final OrderRealtimeService orderRealtimeService;
     private final SupportChatService supportChatService;
+    private final CouponRepository couponRepository;
 
     @Override
     @Transactional
@@ -96,6 +99,18 @@ public class OrderServiceImpl implements OrderService {
             items.add(orderItemRepository.save(orderItem));
 
             totalPrice += itemPrice * itemReq.getQuantity();
+        }
+
+        // Xử lý mã giảm giá (chỉ áp dụng trên tổng tiền thức ăn)
+        double discountAmount = 0;
+        if (request.getCouponCode() != null && !request.getCouponCode().trim().isEmpty()) {
+            Coupon coupon = couponRepository.findByCode(request.getCouponCode()).orElse(null);
+            if (coupon != null && coupon.getIsActive() && (coupon.getExpirationDate() == null || !coupon.getExpirationDate().isBefore(java.time.LocalDateTime.now()))) {
+                discountAmount = totalPrice * coupon.getDiscountPercentage() / 100.0;
+                savedOrder.setCouponCode(coupon.getCode());
+                savedOrder.setDiscountAmount(discountAmount);
+                totalPrice -= discountAmount;
+            }
         }
 
         // Phí vận chuyển
@@ -211,6 +226,8 @@ public class OrderServiceImpl implements OrderService {
         res.setShipperName(order.getShipperName());
         res.setShipperPhone(order.getShipperPhone());
         res.setCreatedAt(order.getCreatedAt());
+        res.setCouponCode(order.getCouponCode());
+        res.setDiscountAmount(order.getDiscountAmount());
 
         List<OrderResponse.OrderItemResponse> itemResponses = new ArrayList<>();
         if (items != null) {

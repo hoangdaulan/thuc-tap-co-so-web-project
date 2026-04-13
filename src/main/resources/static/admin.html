@@ -74,6 +74,12 @@
                             <div class="hidden-sidebar">Hỗ trợ chat</div>
                         </a>
                     </li>
+                    <li class="sidebar-list-item tab-content" id="coupon-tab">
+                        <a href="#" class="sidebar-link">
+                            <div class="sidebar-icon"><i class="fa-light fa-ticket"></i></div>
+                            <div class="hidden-sidebar">Khuyến mãi</div>
+                        </a>
+                    </li>
                 </ul>
             </div>
             <div class="bottom-sidebar">
@@ -450,6 +456,36 @@
                     </div>
                 </div>
             </div>
+            <!-- Coupon -->
+            <div class="section" id="coupon-section">
+                <div class="admin-control">
+                    <div class="admin-control-left">
+                    </div>
+                    <div class="admin-control-center">
+                    </div>
+                    <div class="admin-control-right">
+                        <button class="btn-control-large" onclick="openCreateCoupon()"><i class="fa-light fa-plus"></i> Thêm mã giảm giá</button>
+                    </div>
+                </div>
+                <div class="table">
+                    <table width="100%">
+                        <thead>
+                            <tr>
+                                <td>STT</td>
+                                <td>Mã giảm giá</td>
+                                <td>Phần trăm giảm</td>
+                                <td>Trạng thái</td>
+                                <td>Thao tác</td>
+                            </tr>
+                        </thead>
+                        <tbody id="show-coupon">
+                            <tr>
+                                <td colspan="5" style="text-align:center;">Đang tải dữ liệu...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </main>
     </div>
     <div class="modal add-product">
@@ -600,6 +636,37 @@
         </div>
     </div>
     </div>
+    
+    <div class="modal coupon-modal">
+        <div class="modal-container">
+            <h3 class="modal-container-title add-coupon-title">THÊM MÃ GIẢM GIÁ MỚI</h3>
+            <button class="modal-close"><i class="fa-regular fa-xmark"></i></button>
+            <div class="form-content">
+                <form action="" class="coupon-form" id="coupon-form">
+                    <input type="hidden" id="coupon-id">
+                    <div class="form-group">
+                        <label for="coupon-code" class="form-label">Mã giảm giá</label>
+                        <input id="coupon-code" name="coupon-code" type="text" placeholder="VD: GIAM10" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="coupon-discount" class="form-label">Phần trăm giảm (%)</label>
+                        <input id="coupon-discount" name="coupon-discount" type="number" min="1" max="100" placeholder="VD: 10" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="coupon-days" class="form-label">Số ngày hoạt động</label>
+                        <input id="coupon-days" name="coupon-days" type="number" min="0" placeholder="0 để không xét ngày hạn" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="" class="form-label">Trạng thái</label>
+                        <input type="checkbox" id="coupon-status" class="switch-input" checked>
+                        <label for="coupon-status" class="switch"></label>
+                    </div>
+                    <button class="form-submit" type="submit"><i class="fa-regular fa-floppy-disk"></i> Lưu mã giảm giá</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <div id="toast"></div>
     <script src="./js/admin.js"></script>
     <script src="./js/employee-chat.js"></script>
