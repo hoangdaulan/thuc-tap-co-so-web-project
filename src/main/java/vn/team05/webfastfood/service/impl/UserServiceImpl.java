@@ -27,6 +27,11 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
+    public long countAllUsers() {
+        return userRepository.count();
+    }
+
+    @Override
     public ResponseData<List<User>> getAllCustomers() {
         List<User> customers = userRepository.findAll();
         return new ResponseData<>(HttpStatus.OK.value(), "Lấy danh sách khách hàng thành công", customers);

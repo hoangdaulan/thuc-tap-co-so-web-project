@@ -100,6 +100,11 @@ public class ProductServiceImpl implements ProductService {
         return new ResponseData<>(HttpStatus.OK.value(), "Xóa sản phẩm thành công", updated);
     }
 
+    @Override
+    public long countAllProducts() {
+        return productRepository.count();
+    }
+
     // ==================== Private helpers ====================
 
     /**

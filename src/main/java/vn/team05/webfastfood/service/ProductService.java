@@ -21,4 +21,6 @@ public interface ProductService {
     ResponseData<Product> createProduct(CreateProductRequest request, MultipartFile imageFile);
 
     ResponseData<Product> softDeleteProduct(Long id);
+
+    long countAllProducts();
 }
