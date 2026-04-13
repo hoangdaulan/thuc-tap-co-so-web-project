@@ -13,6 +13,8 @@ import java.util.Map;
  */
 public interface UserService {
 
+    long countAllUsers();
+
     ResponseData<List<User>> getAllCustomers();
 
     ResponseData<User> createCustomer(User user);

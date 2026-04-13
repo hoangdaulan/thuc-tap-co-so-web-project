@@ -57,4 +57,10 @@ public class AdminUserController {
         );
         return ResponseEntity.ok(responseData);
     }
+
+    @GetMapping("/count")
+    public ResponseEntity<ResponseData<Long>> getUserCount() {
+        long count = userService.countAllUsers();
+        return ResponseEntity.ok(new ResponseData<>(200, "Tổng số người dùng", count));
+    }
 }

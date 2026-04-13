@@ -68,10 +68,15 @@ function getMoney() {
     return tongtien;
 }
 
-document.getElementById("amount-product").innerHTML = getAmoumtProduct();
-document.getElementById("doanh-thu").innerHTML = vnd(getMoney());
 
-// Doi sang dinh dang tien VND
+// Set amount-product from backend in updateDashboardStats()
+
+
+// Đổi sang định dạng tiền VND
+// Ensure dashboard stats are updated on page load
+document.addEventListener('DOMContentLoaded', () => {
+    updateDashboardStats();
+});
 function vnd(price) {
     return price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
 }
@@ -767,126 +772,72 @@ function createObj() {
     return result;
 }
 
-// Filter
-function thongKe(mode) {
-    let categoryTk = document.getElementById("the-loai-tk").value;
-    let ct = document.getElementById("form-search-tk").value;
-    let timeStart = document.getElementById("time-start-tk").value;
-    let timeEnd = document.getElementById("time-end-tk").value;
-    if (timeEnd < timeStart && timeEnd != "" && timeStart != "") {
-        alert("Lựa chọn thời gian sai !");
-        return;
-    }
-    let arrDetail = createObj();
-    let result = categoryTk == "Tất cả" ? arrDetail : arrDetail.filter((item) => {
-        return item.category == categoryTk;
-    });
+// Thống kê backend (API)
+async function thongKe(sortType = 2) {
+    const categorySelect = document.getElementById("the-loai-tk");
+    const keywordInput = document.getElementById("form-search-tk");
+    const startDateInput = document.getElementById("time-start-tk");
+    const endDateInput = document.getElementById("time-end-tk");
 
-    result = ct == "" ? result : result.filter((item) => {
-        return (item.title.toLowerCase().includes(ct.toLowerCase()));
-    });
+    let categoryId = categorySelect && categorySelect.value !== "Tất cả" ? categorySelect.selectedIndex : null;
+    let keyword = keywordInput ? keywordInput.value.trim() : "";
+    let startDate = startDateInput ? startDateInput.value : "";
+    let endDate = endDateInput ? endDateInput.value : "";
 
-    if (timeStart != "" && timeEnd == "") {
-        result = result.filter((item) => {
-            return new Date(item.time) > new Date(timeStart).setHours(0, 0, 0);
-        });
-    } else if (timeStart == "" && timeEnd != "") {
-        result = result.filter((item) => {
-            return new Date(item.time) < new Date(timeEnd).setHours(23, 59, 59);
-        });
-    } else if (timeStart != "" && timeEnd != "") {
-        result = result.filter((item) => {
-            return (new Date(item.time) > new Date(timeStart).setHours(0, 0, 0) && new Date(item.time) < new Date(timeEnd).setHours(23, 59, 59)
-            );
-        });
-    }
-    showThongKe(result, mode);
-}
+    let url = '/api/statistics?';
+    if (categoryId && categoryId !== 0) url += `categoryId=${categoryId}&`;
+    if (keyword) url += `keyword=${encodeURIComponent(keyword)}&`;
+    if (startDate) url += `startDate=${startDate}&`;
+    if (endDate) url += `endDate=${endDate}&`;
 
-// Show số lượng sp, số lượng đơn bán, doanh thu
-function showOverview(arr) {
-    document.getElementById("quantity-product").innerText = arr.length;
-    document.getElementById("quantity-order").innerText = arr.reduce((sum, cur) => (sum + parseInt(cur.quantity)), 0);
-    document.getElementById("quantity-sale").innerText = vnd(arr.reduce((sum, cur) => (sum + parseInt(cur.doanhthu)), 0));
-}
-
-function showThongKe(arr, mode) {
-    let orderHtml = "";
-    let mergeObj = mergeObjThongKe(arr);
-    showOverview(mergeObj);
-
-    switch (mode) {
-        case 0:
-            mergeObj = mergeObjThongKe(createObj());
-            showOverview(mergeObj);
-            document.getElementById("the-loai-tk").value = "Tất cả";
-            document.getElementById("form-search-tk").value = "";
-            document.getElementById("time-start-tk").value = "";
-            document.getElementById("time-end-tk").value = "";
-            break;
-        case 1:
-            mergeObj.sort((a, b) => parseInt(a.quantity) - parseInt(b.quantity))
-            break;
-        case 2:
-            mergeObj.sort((a, b) => parseInt(b.quantity) - parseInt(a.quantity))
-            break;
-    }
-    for (let i = 0; i < mergeObj.length; i++) {
-        orderHtml += `
-        <tr>
-        <td>${i + 1}</td>
-        <td><div class="prod-img-title"><img class="prd-img-tbl" src="${mergeObj[i].img}" alt=""><p>${mergeObj[i].title}</p></div></td>
-        <td>${mergeObj[i].quantity}</td>
-        <td>${vnd(mergeObj[i].doanhthu)}</td>
-        <td><button class="btn-detail product-order-detail" data-id="${mergeObj[i].id}"><i class="fa-regular fa-eye"></i> Chi tiết</button></td>
-        </tr>
-        `;
-    }
-    document.getElementById("showTk").innerHTML = orderHtml;
-    document.querySelectorAll(".product-order-detail").forEach(item => {
-        let idProduct = item.getAttribute("data-id");
-        item.addEventListener("click", () => {
-            detailOrderProduct(arr, idProduct);
-        })
-    })
-}
-
-showThongKe(createObj())
-
-function mergeObjThongKe(arr) {
-    let result = [];
-    arr.forEach(item => {
-        let check = result.find(i => i.id == item.id) // Không tìm thấy gì trả về undefined
-
-        if (check) {
-            check.quantity = parseInt(check.quantity) + parseInt(item.quantity);
-            check.doanhthu += parseInt(item.price) * parseInt(item.quantity);
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        document.getElementById("quantity-product").innerText = data.totalUniqueProducts;
+        document.getElementById("quantity-order").innerText = data.totalQuantity;
+        document.getElementById("quantity-sale").innerText = vnd(data.totalRevenue);
+        let details = data.details || [];
+        if (sortType === 1) {
+            details.sort((a, b) => a.totalRevenue - b.totalRevenue);
         } else {
-            const newItem = { ...item }
-            newItem.doanhthu = newItem.price * newItem.quantity;
-            result.push(newItem);
+            details.sort((a, b) => b.totalRevenue - a.totalRevenue);
         }
-
-    });
-    return result;
+        let html = '';
+        details.forEach((item, idx) => {
+            html += `<tr>
+                <td>${idx + 1}</td>
+                <td>${item.productName}</td>
+                <td>${item.totalQuantitySold}</td>
+                <td>${vnd(item.totalRevenue)}</td>
+                <td></td>
+            </tr>`;
+        });
+        document.getElementById("showTk").innerHTML = html;
+    } catch (e) {
+        document.getElementById("showTk").innerHTML = '<tr><td colspan="5">Không thể tải dữ liệu thống kê</td></tr>';
+        document.getElementById("quantity-product").innerText = 0;
+        document.getElementById("quantity-order").innerText = 0;
+        document.getElementById("quantity-sale").innerText = vnd(0);
+    }
 }
 
-function detailOrderProduct(arr, id) {
-    let orderHtml = "";
-    arr.forEach(item => {
-        if (item.id == id) {
-            orderHtml += `<tr>
-            <td>${item.madon}</td>
-            <td>${item.quantity}</td>
-            <td>${vnd(item.price)}</td>
-            <td>${formatDate(item.time)}</td>
-            </tr>
-            `;
-        }
-    });
-    document.getElementById("show-product-order-detail").innerHTML = orderHtml
-    document.querySelector(".modal.detail-order-product").classList.add("open")
-}
+// Gắn lại sự kiện onchange/oninput cho filter thống kê
+if (document.getElementById("the-loai-tk")) document.getElementById("the-loai-tk").onchange = () => thongKe();
+if (document.getElementById("form-search-tk")) document.getElementById("form-search-tk").oninput = () => thongKe();
+if (document.getElementById("time-start-tk")) document.getElementById("time-start-tk").onchange = () => thongKe();
+if (document.getElementById("time-end-tk")) document.getElementById("time-end-tk").onchange = () => thongKe();
+
+// Gắn lại cho các nút sort
+const btnSortAsc = document.querySelector('button[onclick="thongKe(1)"]');
+const btnSortDesc = document.querySelector('button[onclick="thongKe(2)"]');
+const btnReset = document.querySelector('button[onclick="thongKe(0)"]');
+if (btnSortAsc) btnSortAsc.onclick = () => thongKe(1);
+if (btnSortDesc) btnSortDesc.onclick = () => thongKe(2);
+if (btnReset) btnReset.onclick = () => thongKe(0);
+
+// Gọi thống kê khi load trang
+window.addEventListener('DOMContentLoaded', () => { thongKe(); });
+
 
 // User
 let addAccount = document.getElementById('signup-button');
@@ -1080,23 +1031,38 @@ function loadCustomersFromApi() {
 
 async function updateDashboardStats() {
     try {
-        const amountUserEl = document.getElementById("amount-user");
-        if (amountUserEl) amountUserEl.innerHTML = allUsersCache.length;
+        // Fetch statistics from backend
+        const response = await fetch('/api/statistics');
+        if (!response.ok) throw new Error('Không thể tải số liệu thống kê');
+        const data = await response.json();
 
-        const activeProducts = allProductsCache.filter(p => p.status == null || p.status == 1);
-        const amountProductEl = document.getElementById("amount-product");
-        if (amountProductEl) amountProductEl.innerHTML = activeProducts.length;
+        // Update total users (if available)
+        const userCount = await fetch('api/admin/khach-hang/count');
+        if (userCount.ok) {
+            const responseData = await userCount.json();
+            let count = responseData.data;
+            const amountUserEl = document.getElementById("amount-user");
+            if (amountUserEl) amountUserEl.innerHTML = count;
+        }
 
-        const doneOrders = allOrdersCache.filter(o => o.status == 3);
-        const tongtien = doneOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+
+        // Update total products (if available)
+        const resCount = await fetch('/api/v1/products/count');
+        if (resCount.ok) {
+            const responseData = await resCount.json();
+            let count = 0;
+            count = responseData.data;
+            const amountProductEl = document.getElementById("amount-product");
+            if (amountProductEl) amountProductEl.innerHTML = count;
+        }
+
+        // Update total revenue
         const doanhThuEl = document.getElementById("doanh-thu");
-        if (doanhThuEl) doanhThuEl.innerHTML = vnd(tongtien);
-
-        const pendingCount = allOrdersCache.filter(o => o.status == 0).length;
-        const pendingEl = document.getElementById("pending-orders");
-        if (pendingEl) pendingEl.innerHTML = pendingCount;
+        if (doanhThuEl && typeof data.totalRevenue !== 'undefined') doanhThuEl.innerHTML = vnd(data.totalRevenue);
     } catch (error) {
         console.error("Lỗi cập nhật số liệu Dashboard:", error);
+        const doanhThuEl = document.getElementById("doanh-thu");
+        if (doanhThuEl) doanhThuEl.innerHTML = vnd(0);
     }
 }
 

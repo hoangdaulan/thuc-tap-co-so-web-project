@@ -33,4 +33,14 @@ public class ProductController {
         ResponseData<List<ProductResponseDTO>> responseData = productService.getAllActiveProductDTOs();
         return ResponseEntity.ok(responseData);
     }
+
+    /**
+     * GET /api/v1/products/count
+     * Lấy tổng số sản phẩm trong hệ thống
+     */
+    @GetMapping("/count")
+    public ResponseEntity<ResponseData<Long>> getProductCount() {
+        long count = productService.countAllProducts();
+        return ResponseEntity.ok(new ResponseData<>(200, "Tổng số sản phẩm", count));
+    }
 }
