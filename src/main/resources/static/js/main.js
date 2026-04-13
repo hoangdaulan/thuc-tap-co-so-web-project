@@ -475,7 +475,7 @@ function logOut() {
 
 function checkAdmin() {
     let user = JSON.parse(localStorage.getItem('currentuser'));
-    if (user && user.userType == 1) {
+    if (user && user.userType > 0) {
         let node = document.createElement(`li`);
         node.innerHTML = `<a href="./admin.html"><i class="fa-light fa-gear"></i> Quản lý cửa hàng</a>`
         document.querySelector('.header-middle-right-menu').prepend(node);
@@ -724,7 +724,7 @@ function renderOrdersFromApi(orders) {
         orders.forEach(order => {
             let statusClass = '';
             if (order.status == 3) statusClass = 'complete';
-            else if (order.status == 4) statusClass = 'cancelled';
+            else if (order.status == 4 || order.status == 5) statusClass = 'cancelled';
             else statusClass = 'no-complete';
 
             let canCancel = order.status == 0;

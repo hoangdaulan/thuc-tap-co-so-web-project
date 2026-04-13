@@ -1,6 +1,7 @@
 function checkLogin() {
     let currentUser = JSON.parse(localStorage.getItem("currentuser"));
-    if (currentUser == null || currentUser.userType == 0) {
+    const role = normalizeUserRole(currentUser?.role);
+    if (currentUser == null || (currentUser.userType == 0 && role !== 'SHIPPER')) {
         document.querySelector("body").innerHTML = `<div class="access-denied-section">
             <img class="access-denied-img" src="./assets/img/access-denied.webp" alt="">
         </div>`
@@ -28,6 +29,55 @@ toogleMenu.onclick = function () {
 // tab for section
 const sidebars = document.querySelectorAll(".sidebar-list-item.tab-content");
 const sections = document.querySelectorAll(".section");
+let currentDashboardRole = normalizeUserRole(JSON.parse(localStorage.getItem("currentuser") || "null")?.role);
+
+function isShipperDashboard() {
+    return currentDashboardRole === 'SHIPPER';
+}
+
+function ensureFailedOrderStatusOption() {
+    const statusSelect = document.getElementById('tinh-trang');
+    if (!statusSelect || statusSelect.querySelector('option[value="5"]')) return;
+    const option = document.createElement('option');
+    option.value = '5';
+    option.textContent = 'Giao that bai';
+    statusSelect.appendChild(option);
+}
+
+function activateSectionByIndex(targetIndex) {
+    const currentTab = document.querySelector(".sidebar-list-item.active");
+    const currentSection = document.querySelector(".section.active");
+    if (currentTab) currentTab.classList.remove("active");
+    if (currentSection) currentSection.classList.remove("active");
+    if (sidebars[targetIndex]) sidebars[targetIndex].classList.add("active");
+    if (sections[targetIndex]) sections[targetIndex].classList.add("active");
+}
+
+function configureShipperDashboard() {
+    if (!isShipperDashboard()) return;
+
+    ensureFailedOrderStatusOption();
+    sidebars.forEach((item, index) => {
+        const shouldShow = index === 4;
+        item.style.display = shouldShow ? "" : "none";
+    });
+    sections.forEach((section, index) => {
+        const shouldShow = index === 4;
+        section.style.display = shouldShow ? "" : "none";
+    });
+
+    const employeeChatTab = document.getElementById('employee-chat-tab');
+    const employeeChatSection = document.getElementById('employee-chat-section');
+    if (employeeChatTab) employeeChatTab.style.display = 'none';
+    if (employeeChatSection) employeeChatSection.style.display = 'none';
+
+    const pageTitle = document.querySelector('.section:nth-child(5) .admin-control-center .form-search-input');
+    if (pageTitle) {
+        pageTitle.placeholder = 'Tim kiem ma don, nguoi nhan...';
+    }
+
+    activateSectionByIndex(4);
+}
 
 for (let i = 0; i < sidebars.length; i++) {
     sidebars[i].onclick = function () {
@@ -598,7 +648,7 @@ async function changeStatus(id, newStatus) {
         let shipperName = document.getElementById('shipper-name-input') ? document.getElementById('shipper-name-input').value : null;
         let shipperPhone = document.getElementById('shipper-phone-input') ? document.getElementById('shipper-phone-input').value : null;
         
-        if (newStatus === 2) {
+        if (!isShipperDashboard() && newStatus === 2) {
             let isDelivery = document.getElementById('shipper-name-input') != null;
             if (isDelivery && (!shipperName || !shipperPhone)) {
                 toast({ title: 'Cảnh báo', message: 'Vui lòng nhập đầy đủ Tên và Số điện thoại Shipper', type: 'warning', duration: 3000 });
@@ -607,13 +657,16 @@ async function changeStatus(id, newStatus) {
         }
 
         let token = localStorage.getItem('jwtToken');
-        const response = await fetch(`/api/v1/admin/orders/${id}/status`, {
+        const endpoint = isShipperDashboard() ? `/api/v1/shipper/orders/${id}/status` : `/api/v1/admin/orders/${id}/status`;
+        const response = await fetch(endpoint, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': token ? `Bearer ${token}` : ''
             },
-            body: JSON.stringify({ status: newStatus, shipperName: shipperName, shipperPhone: shipperPhone })
+            body: JSON.stringify(isShipperDashboard()
+                ? { status: newStatus }
+                : { status: newStatus, shipperName: shipperName, shipperPhone: shipperPhone })
         });
         if (response.ok) {
             toast({ title: 'Thành công', message: 'Cập nhật trạng thái thành công!', type: 'success', duration: 2000 });
@@ -628,7 +681,13 @@ async function changeStatus(id, newStatus) {
                 await loadOrdersFromApi();
             }
         } else {
-            let msg = await response.text();
+            let msg = 'Khong the cap nhat trang thai';
+            try {
+                const errorData = await response.json();
+                msg = errorData.message || msg;
+            } catch (err) {
+                msg = await response.text();
+            }
             toast({ title: 'Lỗi', message: msg, type: 'error', duration: 3000 });
         }
     } catch (e) {
@@ -682,6 +741,10 @@ function scheduleRealtimeReconnect() {
 }
 
 function initOrderRealtime() {
+    if (isShipperDashboard()) {
+        return;
+    }
+
     if (orderRealtimeSource) {
         orderRealtimeSource.close();
     }
@@ -718,7 +781,8 @@ function initOrderRealtime() {
 async function loadOrdersFromApi() {
     try {
         let token = localStorage.getItem('jwtToken');
-        const response = await fetch('/api/v1/admin/orders', {
+        const endpoint = isShipperDashboard() ? '/api/v1/shipper/orders' : '/api/v1/admin/orders';
+        const response = await fetch(endpoint, {
             headers: { 'Authorization': token ? `Bearer ${token}` : '' }
         });
         if (!response.ok) throw new Error('Không thể tải đơn hàng');
@@ -743,6 +807,35 @@ function formatDate(date) {
 }
 
 // Show order
+function renderOrderActions(item) {
+    const detailLabel = 'Chi ti\u1ebft';
+    if (!isShipperDashboard()) {
+        return `<button class="btn-detail" onclick="detailOrderAdmin(${item.id})"><i class="fa-regular fa-eye"></i> ${detailLabel}</button>`;
+    }
+
+    if (item.status != 2) {
+        return `<button class="btn-detail" onclick="detailOrderAdmin(${item.id})"><i class="fa-regular fa-eye"></i> ${detailLabel}</button>`;
+    }
+
+    return `
+        <button class="btn-detail" style="background:#28a745; color:#fff;" onclick="changeStatus(${item.id}, 3)">Giao th\u00e0nh c\u00f4ng</button>
+        <button class="btn-detail" style="background:#ff9800; color:#fff;" onclick="changeStatus(${item.id}, 5)">Giao th\u1ea5t b\u1ea1i</button>
+        <button class="btn-detail" style="background:#f44336; color:#fff;" onclick="changeStatus(${item.id}, 4)">H\u1ee7y \u0111\u01a1n</button>
+    `;
+}
+
+function enhanceShipperOrderRows(orders) {
+    if (!isShipperDashboard()) return;
+
+    const rows = document.querySelectorAll('#showOrder tr');
+    rows.forEach((row, index) => {
+        const order = orders[index];
+        const actionCell = row.querySelector('td.control');
+        if (!order || !actionCell) return;
+        actionCell.innerHTML = renderOrderActions(order);
+    });
+}
+
 function showOrder(arr) {
     let orderHtml = "";
     if (!arr || arr.length == 0) {
@@ -752,7 +845,7 @@ function showOrder(arr) {
             let statusText = item.statusText || 'Chờ xác nhận';
             let statusClass = '';
             if (item.status == 3) statusClass = 'status-complete';
-            else if (item.status == 4) statusClass = 'status-cancelled';
+            else if (item.status == 4 || item.status == 5) statusClass = 'status-cancelled';
             else statusClass = 'status-no-complete';
             let date = formatDate(item.createdAt || new Date());
             let recipientInfo = item.recipientPhone || item.user?.phone || '';
@@ -771,6 +864,7 @@ function showOrder(arr) {
         });
     }
     document.getElementById("showOrder").innerHTML = orderHtml;
+    enhanceShipperOrderRows(arr || []);
 }
 
 // Xem chi tiết đơn hàng admin
@@ -779,7 +873,8 @@ async function detailOrderAdmin(id) {
     let order = allOrdersCache.find(o => o.id == id);
     if (!order) {
         try {
-            let res = await fetch(`/api/v1/admin/orders?status=`, { headers: { 'Authorization': token ? `Bearer ${token}` : '' } });
+            const endpoint = isShipperDashboard() ? `/api/v1/shipper/orders` : `/api/v1/admin/orders?status=`;
+            let res = await fetch(endpoint, { headers: { 'Authorization': token ? `Bearer ${token}` : '' } });
             if (res.ok) { let resData = await res.json(); allOrdersCache = resData.data || []; order = allOrdersCache.find(o => o.id == id); }
         } catch (e) { }
     }
@@ -1556,6 +1651,135 @@ function bindAccountModalActions() {
     };
 }
 
+function detailOrderAdmin(id) {
+    return detailOrderDashboard(id);
+}
+
+async function detailOrderDashboard(id) {
+    let token = localStorage.getItem('jwtToken');
+    let order = allOrdersCache.find(o => o.id == id);
+    if (!order) {
+        try {
+            const endpoint = isShipperDashboard() ? '/api/v1/shipper/orders' : '/api/v1/admin/orders?status=';
+            let res = await fetch(endpoint, { headers: { 'Authorization': token ? `Bearer ${token}` : '' } });
+            if (res.ok) {
+                let resData = await res.json();
+                allOrdersCache = resData.data || [];
+                order = allOrdersCache.find(o => o.id == id);
+            }
+        } catch (e) { }
+    }
+    if (!order) return;
+
+    document.querySelector(".modal.detail-order").classList.add("open");
+    let spHtml = `<div class="modal-detail-left"><div class="order-item-group">`;
+    if (order.items && order.items.length > 0) {
+        order.items.forEach(item => {
+            let imgSrc = item.productImage || './assets/img/blank-image.png';
+            if (imgSrc && !imgSrc.startsWith('http') && !imgSrc.startsWith('/') && !imgSrc.startsWith('./')) {
+                imgSrc = `./assets/img/products/${imgSrc}`;
+            }
+            spHtml += `<div class="order-product">
+                <div class="order-product-left">
+                    <img src="${imgSrc}" alt="">
+                    <div class="order-product-info">
+                        <h4>${item.productTitle}</h4>
+                        <p class="order-product-note"><i class="fa-light fa-pen"></i> ${item.note || 'Khong co ghi chu'}</p>
+                        <p class="order-product-quantity">SL: ${item.quantity}<p>
+                    </div>
+                </div>
+                <div class="order-product-right">
+                    <div class="order-product-price">
+                        <span class="order-product-current-price">${vnd(item.price)}</span>
+                    </div>
+                </div>
+            </div>`;
+        });
+    }
+    spHtml += `</div></div>`;
+    spHtml += `<div class="modal-detail-right">
+        <ul class="detail-order-group">
+            <li class="detail-order-item">
+                <span class="detail-order-item-left"><i class="fa-light fa-calendar-days"></i> Ngay dat hang</span>
+                <span class="detail-order-item-right">${formatDate(order.createdAt)}</span>
+            </li>
+            <li class="detail-order-item">
+                <span class="detail-order-item-left"><i class="fa-light fa-truck"></i> Hinh thuc giao</span>
+                <span class="detail-order-item-right">${order.deliveryType === 'pickup' ? 'Tu den lay' : 'Giao tan noi'}</span>
+            </li>
+            <li class="detail-order-item">
+                <span class="detail-order-item-left"><i class="fa-thin fa-person"></i> Nguoi nhan</span>
+                <span class="detail-order-item-right">${order.recipientName || ''}</span>
+            </li>
+            <li class="detail-order-item">
+                <span class="detail-order-item-left"><i class="fa-light fa-phone"></i> So dien thoai</span>
+                <span class="detail-order-item-right">${order.recipientPhone || ''}</span>
+            </li>
+            ${order.deliveryType === 'delivery' ? `
+            <li class="detail-order-item">
+                <span class="detail-order-item-left"><i class="fa-light fa-motorcycle"></i> Ten Shipper</span>
+                <span class="detail-order-item-right">${order.shipperName || 'N/A'}</span>
+            </li>
+            <li class="detail-order-item">
+                <span class="detail-order-item-left"><i class="fa-light fa-phone"></i> SDT Shipper</span>
+                <span class="detail-order-item-right">${order.shipperPhone || 'N/A'}</span>
+            </li>
+            ` : ''}
+            <li class="detail-order-item tb">
+                <span class="detail-order-item-left"><i class="fa-light fa-clock"></i> Thoi gian giao</span>
+                <p class="detail-order-item-b">${order.deliveryTime ? order.deliveryTime + ' - ' : ''}${order.shippingDate ? formatDate(order.shippingDate) : ''}</p>
+            </li>
+            <li class="detail-order-item tb">
+                <span class="detail-order-item-t"><i class="fa-light fa-location-dot"></i> Dia chi nhan</span>
+                <p class="detail-order-item-b">${order.deliveryAddress || order.branch || ''}</p>
+            </li>
+            <li class="detail-order-item tb">
+                <span class="detail-order-item-t"><i class="fa-light fa-note-sticky"></i> Ghi chu</span>
+                <p class="detail-order-item-b">${order.note || ''}</p>
+            </li>
+        </ul>
+    </div>`;
+
+    let bottomHtml = `<div class="modal-detail-bottom-left">
+        <div class="price-total">
+            <span class="thanhtien">Thanh tien</span>
+            <span class="price">${vnd(order.totalPrice || 0)}</span>
+        </div>
+    </div>
+    <div class="modal-detail-bottom-right" style="display:flex; flex-direction:column; align-items:flex-end; gap: 10px;">`;
+
+    if (isShipperDashboard() && order.status == 2) {
+        bottomHtml += `
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="modal-detail-btn btn-cap-nhat" onclick="changeStatus(${order.id}, 3)">Giao thanh cong</button>
+            <button class="modal-detail-btn btn-cap-nhat" style="background-color: #ff9800;" onclick="changeStatus(${order.id}, 5)">Giao that bai</button>
+            <button class="modal-detail-btn btn-cap-nhat" style="background-color: #f44336;" onclick="changeStatus(${order.id}, 4)">Huy don</button>
+        </div>`;
+    } else if (order.status == 0 || order.status == 1) {
+        if (order.deliveryType === 'delivery') {
+            bottomHtml += `
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <input type="text" id="shipper-name-input" placeholder="Ten Shipper" class="form-control" style="width: 150px; padding: 5px;">
+                <input type="text" id="shipper-phone-input" placeholder="SDT Shipper" class="form-control" style="width: 150px; padding: 5px;">
+            </div>`;
+        }
+        bottomHtml += `
+        <div style="display: flex; gap: 10px;">
+            <button class="modal-detail-btn btn-cap-nhat" style="background-color: #f44336;" onclick="changeStatus(${order.id}, 4)">Huy don</button>
+            <button class="modal-detail-btn btn-cap-nhat" onclick="changeStatus(${order.id}, 2)">Xac nhan don</button>
+        </div>`;
+    } else {
+        bottomHtml += `<span class="status-complete">Don hang da duoc xu ly</span>`;
+    }
+    bottomHtml += `</div>`;
+
+    document.querySelector(".modal-detail-order").innerHTML = spHtml;
+    document.querySelector(".modal-detail-bottom").innerHTML = bottomHtml;
+    if (!isShipperDashboard() && (order.status == 0 || order.status == 1) && order.deliveryType === 'delivery') {
+        initializeShipperAutocomplete(order);
+    }
+}
+
 window.onload = function () {
     checkLogin();
     showUser();
@@ -1565,6 +1789,21 @@ window.onload = function () {
     loadProductsFromApi();
     loadOrdersFromApi(); // Load đơn hàng từ API backend
     initOrderRealtime();
+};
+
+window.onload = function () {
+    checkLogin();
+    currentDashboardRole = normalizeUserRole(JSON.parse(localStorage.getItem("currentuser") || "null")?.role);
+    configureShipperDashboard();
+    if (!isShipperDashboard()) {
+        showUser();
+        scheduleDashboardStatsUpdate();
+        setupUserFilters();
+        bindAccountModalActions();
+        loadProductsFromApi();
+        initOrderRealtime();
+    }
+    loadOrdersFromApi();
 };
 
 window.addEventListener('beforeunload', function () {
