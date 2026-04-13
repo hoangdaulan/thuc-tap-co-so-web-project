@@ -65,6 +65,12 @@ public class Order extends BaseEntity {
     @Column(name = "shipper_phone")
     private String shipperPhone;
 
+    @Column(name = "coupon_code")
+    private String couponCode;
+
+    @Column(name = "discount_amount")
+    private Double discountAmount;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<OrderItem> items;
 }

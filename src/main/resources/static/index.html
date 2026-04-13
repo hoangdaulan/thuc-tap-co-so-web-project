@@ -689,6 +689,11 @@
                 <div class="bill-payment">
                     <div class="total-bill-order">
                     </div>
+                    <div class="coupon-apply-row" style="display:flex;gap:8px;margin:12px 0;">
+                        <input type="text" id="coupon-input" placeholder="Nhập mã giảm giá..." style="flex:1;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;outline:none;">
+                        <button id="coupon-apply-btn" onclick="applyCoupon()" style="padding:10px 16px;background:linear-gradient(135deg,#ff6b35,#f7931e);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;white-space:nowrap;">Áp dụng</button>
+                    </div>
+                    <div id="coupon-message" style="font-size:13px;margin-bottom:6px;"></div>
                     <div class="policy-note">
                         Bằng việc bấm vào nút “Đặt hàng”, tôi đồng ý với
                         <a href="#" target="_blank">chính sách hoạt động</a>

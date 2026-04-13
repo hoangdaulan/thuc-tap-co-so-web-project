@@ -1,6 +1,61 @@
 const PHIVANCHUYEN = 30000;
 let priceFinal = document.getElementById("checkout-cart-price-final");
-// Trang thanh toan
+
+// Trạng thái mã giảm giá
+let appliedCoupon = null; // { code, discountPercentage }
+
+// Áp dụng mã giảm giá
+async function applyCoupon() {
+    const code = document.getElementById('coupon-input').value.trim();
+    const msgEl = document.getElementById('coupon-message');
+    if (!code) {
+        msgEl.style.color = 'orange';
+        msgEl.innerText = 'Vui lòng nhập mã giảm giá!';
+        return;
+    }
+    try {
+        const res = await fetch(`/api/v1/coupons/apply?code=${encodeURIComponent(code)}`);
+        const data = await res.json();
+        if (res.ok && data.data) {
+            appliedCoupon = data.data;
+            msgEl.style.color = 'green';
+            msgEl.innerText = `✅ Áp dụng thành công! Giảm ${appliedCoupon.discountPercentage}%`;
+            recalculateTotal();
+        } else {
+            appliedCoupon = null;
+            msgEl.style.color = 'red';
+            msgEl.innerText = data.message || 'Mã giảm giá không hợp lệ!';
+            recalculateTotal();
+        }
+    } catch (e) {
+        appliedCoupon = null;
+        msgEl.style.color = 'red';
+        msgEl.innerText = 'Không thể kiểm tra mã, vui lòng thử lại!';
+    }
+}
+
+// Tính lại tổng tiền có tính mã giảm
+let _checkoutOption = 1;
+let _checkoutProduct = null;
+
+function recalculateTotal() {
+    let rawTotal = 0;
+    if (_checkoutOption === 1) {
+        rawTotal = getCartTotal();
+    } else if (_checkoutOption === 2 && _checkoutProduct) {
+        rawTotal = _checkoutProduct.soluong * _checkoutProduct.price;
+    }
+
+    let discounted = rawTotal;
+    if (appliedCoupon && appliedCoupon.discountPercentage > 0) {
+        discounted = rawTotal - (rawTotal * appliedCoupon.discountPercentage / 100);
+    }
+
+    const isDelivery = !document.querySelector('#tudenlay.active');
+    const ship = isDelivery ? PHIVANCHUYEN : 0;
+    priceFinal.innerText = vnd(discounted + ship);
+}
+
 function thanhtoanpage(option,product) {
     // Xu ly ngay nhan hang
     let today = new Date();
@@ -46,6 +101,8 @@ function thanhtoanpage(option,product) {
     // Xu ly don hang
     switch (option) {
         case 1: // Truong hop thanh toan san pham trong gio
+            _checkoutOption = 1;
+            _checkoutProduct = null;
             // Hien thi don hang
             showProductCart();
             // Tinh tien
@@ -68,6 +125,8 @@ function thanhtoanpage(option,product) {
             priceFinal.innerText = vnd(getCartTotal() + PHIVANCHUYEN);
             break;
         case 2: // Truong hop mua ngay
+            _checkoutOption = 2;
+            _checkoutProduct = product;
             // Hien thi san pham
             showProductBuyNow(product);
             // Tinh tien
@@ -107,14 +166,7 @@ function thanhtoanpage(option,product) {
             item.style.display = "none";
         });
         tudenlayGroup.style.display = "block";
-        switch (option) {
-            case 1:
-                priceFinal.innerText = vnd(getCartTotal());
-                break;
-            case 2:
-                priceFinal.innerText = vnd((product.soluong * product.price));
-                break;
-        }
+        recalculateTotal();
     })
 
     giaotannoi.addEventListener('click', () => {
@@ -124,14 +176,7 @@ function thanhtoanpage(option,product) {
         chkShip.forEach(item => {
             item.style.display = "flex";
         });
-        switch (option) {
-            case 1:
-                priceFinal.innerText = vnd(getCartTotal() + PHIVANCHUYEN);
-                break;
-            case 2:
-                priceFinal.innerText = vnd((product.soluong * product.price) + PHIVANCHUYEN);
-                break;
-        }
+        recalculateTotal();
     })
 
     // Su kien khu nhan nut dat hang
@@ -180,6 +225,13 @@ function showProductBuyNow(product) {
 let nutthanhtoan = document.querySelector('.thanh-toan')
 let checkoutpage = document.querySelector('.checkout-page');
 nutthanhtoan.addEventListener('click', () => {
+    // Reset coupon khi mở trang thanh toán
+    appliedCoupon = null;
+    const couponInput = document.getElementById('coupon-input');
+    const couponMsg = document.getElementById('coupon-message');
+    if (couponInput) couponInput.value = '';
+    if (couponMsg) couponMsg.innerText = '';
+
     checkoutpage.classList.add('active');
     thanhtoanpage(1);
     closeCart();
@@ -295,6 +347,7 @@ async function xulyDathang(product) {
         recipientPhone: sdtnhan,
         deliveryAddress: diachinhan,
         deliveryTime: thoigiangiao,
+        couponCode: appliedCoupon ? appliedCoupon.code : null,
         items: items
     };
 
