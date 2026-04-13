@@ -16,11 +16,15 @@ public interface OrderService {
 
     ResponseData<List<OrderResponse>> getOrdersByPhone(String phone);
 
+    ResponseData<List<OrderResponse>> getOrdersByShipperPhone(String phone);
+
     ResponseData<List<OrderResponse>> getAllOrders();
 
     ResponseData<List<OrderResponse>> getOrdersByStatus(Integer status);
 
     ResponseData<OrderResponse> updateOrderStatus(Long orderId, Integer newStatus, String shipperName, String shipperPhone, String employeePhone);
+
+    ResponseData<OrderResponse> updateOrderStatusByShipper(Long orderId, Integer newStatus, String shipperPhone);
 
     ResponseData<OrderResponse> cancelOrder(Long orderId, String phone);
 }

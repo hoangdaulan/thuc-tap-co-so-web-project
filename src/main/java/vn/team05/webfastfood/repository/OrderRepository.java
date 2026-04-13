@@ -11,10 +11,11 @@ import java.util.List;
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
     // Các hàm của Lực giúp lấy đơn hàng kèm sắp xếp mới nhất
-    List<Order> findByUserOrderByCreatedAtDesc(User user);
+    List<Order> findByCustomerOrderByCreatedAtDesc(User customer);
+    List<Order> findByShipperOrderByCreatedAtDesc(User shipper);
     List<Order> findByStatusOrderByCreatedAtDesc(Integer status);
     List<Order> findAllByOrderByCreatedAtDesc();
 
     // Giữ lại hàm của đồng đội để không gây lỗi code của họ
-    List<Order> findByUserId(Long userId);
+    List<Order> findByCustomerId(Long customerId);
 }

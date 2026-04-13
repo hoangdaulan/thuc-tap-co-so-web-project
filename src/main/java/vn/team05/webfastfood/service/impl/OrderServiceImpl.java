@@ -1,4 +1,3 @@
-// package: vn.team05.webfastfood.service.impl
 package vn.team05.webfastfood.service.impl;
 
 import lombok.RequiredArgsConstructor;
@@ -24,11 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Triển khai logic nghiệp vụ cho đơn hàng.
- * Chuyển toàn bộ logic từ OrderService (concrete) cũ vào đây,
- * đồng thời bọc kết quả bằng ResponseData<T>.
- */
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
@@ -43,15 +37,15 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public ResponseData<OrderResponse> placeOrder(PlaceOrderRequest request, String phone) {
-        User user = userRepository.findByPhone(phone)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+        User customer = userRepository.findByPhone(phone)
+                .orElseThrow(() -> new RuntimeException("Khong tim thay nguoi dung"));
 
         if (request.getItems() == null || request.getItems().isEmpty()) {
-            throw new RuntimeException("Giỏ hàng trống");
+            throw new RuntimeException("Gio hang trong");
         }
 
         Order order = new Order();
-        order.setUser(user);
+        order.setCustomer(customer);
         order.setNote(request.getNote());
         order.setPaymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : "cod");
         order.setShippingDate(request.getShippingDate());
@@ -70,18 +64,16 @@ public class OrderServiceImpl implements OrderService {
 
         for (PlaceOrderRequest.OrderItemRequest itemReq : request.getItems()) {
             Product product = productRepository.findById(itemReq.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại: " + itemReq.getProductId()));
+                    .orElseThrow(() -> new RuntimeException("San pham khong ton tai: " + itemReq.getProductId()));
 
-            // Logic tính giá có chiết khấu
             double itemPrice = product.getPrice() != null ? product.getPrice() : 0.0;
             if (product.getDiscount() != null && product.getDiscount() > 0) {
                 itemPrice = itemPrice - (itemPrice * product.getDiscount() / 100.0);
             }
 
-            // Trừ số lượng kho
             if (product.getQuantity() != null) {
                 if (product.getQuantity() < itemReq.getQuantity()) {
-                    throw new RuntimeException("Sản phẩm " + product.getTitle() + " không đủ số lượng!");
+                    throw new RuntimeException("San pham " + product.getTitle() + " khong du so luong");
                 }
                 product.setQuantity(product.getQuantity() - itemReq.getQuantity());
                 productRepository.save(product);
@@ -98,7 +90,6 @@ public class OrderServiceImpl implements OrderService {
             totalPrice += itemPrice * itemReq.getQuantity();
         }
 
-        // Phí vận chuyển
         if ("delivery".equals(request.getDeliveryType())) {
             totalPrice += 30000;
         }
@@ -108,17 +99,31 @@ public class OrderServiceImpl implements OrderService {
 
         OrderResponse response = toOrderResponse(savedOrder, items);
         orderRealtimeService.publishNewOrder(response);
-        return new ResponseData<>(HttpStatus.OK.value(), "Đặt hàng thành công", response);
+        return new ResponseData<>(HttpStatus.OK.value(), "Dat hang thanh cong", response);
     }
 
     @Override
     public ResponseData<List<OrderResponse>> getOrdersByPhone(String phone) {
         User user = userRepository.findByPhone(phone)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
-        List<OrderResponse> orders = orderRepository.findByUserOrderByCreatedAtDesc(user).stream()
+                .orElseThrow(() -> new RuntimeException("Khong tim thay nguoi dung"));
+        List<OrderResponse> orders = orderRepository.findByCustomerOrderByCreatedAtDesc(user).stream()
                 .map(o -> toOrderResponse(o, orderItemRepository.findByOrder(o)))
                 .collect(Collectors.toList());
-        return new ResponseData<>(HttpStatus.OK.value(), "Lấy danh sách đơn hàng thành công", orders);
+        return new ResponseData<>(HttpStatus.OK.value(), "Lay danh sach don hang thanh cong", orders);
+    }
+
+    @Override
+    public ResponseData<List<OrderResponse>> getOrdersByShipperPhone(String phone) {
+        User shipper = userRepository.findByPhone(phone)
+                .orElseThrow(() -> new RuntimeException("Khong tim thay shipper"));
+        if (!"SHIPPER".equalsIgnoreCase(shipper.getRole())) {
+            throw new RuntimeException("Tai khoan nay khong phai shipper");
+        }
+
+        List<OrderResponse> orders = orderRepository.findByShipperOrderByCreatedAtDesc(shipper).stream()
+                .map(o -> toOrderResponse(o, orderItemRepository.findByOrder(o)))
+                .collect(Collectors.toList());
+        return new ResponseData<>(HttpStatus.OK.value(), "Lay danh sach don hang cua shipper thanh cong", orders);
     }
 
     @Override
@@ -126,7 +131,7 @@ public class OrderServiceImpl implements OrderService {
         List<OrderResponse> orders = orderRepository.findAllByOrderByCreatedAtDesc().stream()
                 .map(o -> toOrderResponse(o, orderItemRepository.findByOrder(o)))
                 .collect(Collectors.toList());
-        return new ResponseData<>(HttpStatus.OK.value(), "Lấy tất cả đơn hàng thành công", orders);
+        return new ResponseData<>(HttpStatus.OK.value(), "Lay tat ca don hang thanh cong", orders);
     }
 
     @Override
@@ -134,62 +139,108 @@ public class OrderServiceImpl implements OrderService {
         List<OrderResponse> orders = orderRepository.findByStatusOrderByCreatedAtDesc(status).stream()
                 .map(o -> toOrderResponse(o, orderItemRepository.findByOrder(o)))
                 .collect(Collectors.toList());
-        return new ResponseData<>(HttpStatus.OK.value(), "Lọc đơn hàng theo trạng thái thành công", orders);
+        return new ResponseData<>(HttpStatus.OK.value(), "Loc don hang theo trang thai thanh cong", orders);
     }
 
     @Override
     @Transactional
     public ResponseData<OrderResponse> updateOrderStatus(Long orderId, Integer newStatus, String shipperName, String shipperPhone, String employeePhone) {
         if (newStatus == null) {
-            throw new RuntimeException("Thiếu trường 'status'");
+            throw new RuntimeException("Thieu truong status");
         }
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng: " + orderId));
+                .orElseThrow(() -> new RuntimeException("Khong tim thay don hang: " + orderId));
 
         if (newStatus == 2 && "delivery".equals(order.getDeliveryType())) {
+            User shipper = null;
+            if (shipperPhone != null && !shipperPhone.isBlank()) {
+                shipper = userRepository.findByPhone(shipperPhone)
+                        .orElseThrow(() -> new RuntimeException("Khong tim thay shipper voi so dien thoai: " + shipperPhone));
+                if (!"SHIPPER".equalsIgnoreCase(shipper.getRole())) {
+                    throw new RuntimeException("Nguoi dung nay khong co vai tro shipper");
+                }
+            }
+
+            order.setShipper(shipper);
             order.setShipperName(shipperName);
             order.setShipperPhone(shipperPhone);
 
-            String message = String.format("Đơn hàng #%d của bạn đã được xác nhận và đang được giao cho shipper %s (SĐT: %s).", order.getId(), shipperName != null ? shipperName : "", shipperPhone != null ? shipperPhone : "");
-            supportChatService.sendMessageAsEmployee(employeePhone, order.getUser().getId(), message);
+            String message = String.format(
+                    "Don hang #%d cua ban da duoc xac nhan va dang duoc giao cho shipper %s (SDT: %s).",
+                    order.getId(),
+                    shipperName != null ? shipperName : "",
+                    shipperPhone != null ? shipperPhone : ""
+            );
+            supportChatService.sendMessageAsEmployee(employeePhone, order.getCustomer().getId(), message);
         }
 
         order.setStatus(newStatus);
         orderRepository.save(order);
         OrderResponse response = toOrderResponse(order, orderItemRepository.findByOrder(order));
         orderRealtimeService.publishOrderStatusUpdated(response);
-        return new ResponseData<>(HttpStatus.OK.value(), "Cập nhật trạng thái đơn hàng thành công", response);
+        return new ResponseData<>(HttpStatus.OK.value(), "Cap nhat trang thai don hang thanh cong", response);
+    }
+
+    @Override
+    @Transactional
+    public ResponseData<OrderResponse> updateOrderStatusByShipper(Long orderId, Integer newStatus, String shipperPhone) {
+        if (newStatus == null) {
+            throw new RuntimeException("Thieu truong status");
+        }
+        if (newStatus != 3 && newStatus != 4 && newStatus != 5) {
+            throw new RuntimeException("Shipper chi duoc chuyen don sang Hoan thanh, Giao that bai hoac Huy don");
+        }
+
+        User shipper = userRepository.findByPhone(shipperPhone)
+                .orElseThrow(() -> new RuntimeException("Khong tim thay shipper"));
+        if (!"SHIPPER".equalsIgnoreCase(shipper.getRole())) {
+            throw new RuntimeException("Tai khoan nay khong phai shipper");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Khong tim thay don hang: " + orderId));
+        if (order.getShipper() == null || !order.getShipper().getId().equals(shipper.getId())) {
+            throw new RuntimeException("Ban khong duoc phan cong cho don hang nay");
+        }
+        if (order.getStatus() != 2) {
+            throw new RuntimeException("Chi don dang giao moi duoc cap nhat tu phia shipper");
+        }
+
+        order.setStatus(newStatus);
+        orderRepository.save(order);
+        OrderResponse response = toOrderResponse(order, orderItemRepository.findByOrder(order));
+        orderRealtimeService.publishOrderStatusUpdated(response);
+        return new ResponseData<>(HttpStatus.OK.value(), "Shipper cap nhat trang thai don hang thanh cong", response);
     }
 
     @Override
     @Transactional
     public ResponseData<OrderResponse> cancelOrder(Long orderId, String phone) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
-        if (!order.getUser().getPhone().equals(phone)) {
-            throw new RuntimeException("Không có quyền hủy đơn hàng này");
+                .orElseThrow(() -> new RuntimeException("Khong tim thay don hang"));
+        if (!order.getCustomer().getPhone().equals(phone)) {
+            throw new RuntimeException("Khong co quyen huy don hang nay");
         }
         if (order.getStatus() != 0) {
-            throw new RuntimeException("Đơn hàng đã được xử lý, không thể hủy");
+            throw new RuntimeException("Don hang da duoc xu ly, khong the huy");
         }
-        order.setStatus(4); // Cancelled
+        order.setStatus(4);
         orderRepository.save(order);
         OrderResponse response = toOrderResponse(order, orderItemRepository.findByOrder(order));
         orderRealtimeService.publishOrderStatusUpdated(response);
-        return new ResponseData<>(HttpStatus.OK.value(), "Hủy đơn hàng thành công", response);
+        return new ResponseData<>(HttpStatus.OK.value(), "Huy don hang thanh cong", response);
     }
 
-    // ==================== Private helpers ====================
-
     private String getStatusText(Integer status) {
-        if (status == null) return "Không xác định";
+        if (status == null) return "Khong xac dinh";
         return switch (status) {
-            case 0 -> "Chờ xác nhận";
-            case 1 -> "Đã xác nhận";
-            case 2 -> "Đang giao";
-            case 3 -> "Hoàn thành";
-            case 4 -> "Đã hủy";
-            default -> "Không xác định";
+            case 0 -> "Cho xac nhan";
+            case 1 -> "Da xac nhan";
+            case 2 -> "Dang giao";
+            case 3 -> "Hoan thanh";
+            case 4 -> "Da huy";
+            case 5 -> "Giao that bai";
+            default -> "Khong xac dinh";
         };
     }
 
@@ -208,8 +259,10 @@ public class OrderServiceImpl implements OrderService {
         res.setDeliveryAddress(order.getDeliveryAddress());
         res.setDeliveryTime(order.getDeliveryTime());
         res.setBranch(order.getBranch());
-        res.setShipperName(order.getShipperName());
-        res.setShipperPhone(order.getShipperPhone());
+        String shipperName = order.getShipper() != null ? order.getShipper().getFullName() : order.getShipperName();
+        String shipperPhone = order.getShipper() != null ? order.getShipper().getPhone() : order.getShipperPhone();
+        res.setShipperName(shipperName);
+        res.setShipperPhone(shipperPhone);
         res.setCreatedAt(order.getCreatedAt());
 
         List<OrderResponse.OrderItemResponse> itemResponses = new ArrayList<>();

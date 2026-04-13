@@ -95,6 +95,7 @@ public class AuthServiceImpl implements AuthService {
         return switch (normalizeRole(role)) {
             case "ADMIN" -> 1;
             case "EMPLOYEE" -> 2;
+            case "SHIPPER" -> 3;
             default -> 0;
         };
     }
