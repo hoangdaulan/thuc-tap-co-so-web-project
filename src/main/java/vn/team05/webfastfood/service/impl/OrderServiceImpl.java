@@ -69,6 +69,11 @@ public class OrderServiceImpl implements OrderService {
             Product product = productRepository.findById(itemReq.getProductId())
                     .orElseThrow(() -> new RuntimeException("San pham khong ton tai: " + itemReq.getProductId()));
 
+            if (product.getStatus() != 1) {
+                throw new RuntimeException("Một số sản phẩm đã hết món, vui lòng kiểm tra lại giỏ hàng.");
+            }
+
+            // Logic tính giá có chiết khấu
             double itemPrice = product.getPrice() != null ? product.getPrice() : 0.0;
             if (product.getDiscount() != null && product.getDiscount() > 0) {
                 itemPrice = itemPrice - (itemPrice * product.getDiscount() / 100.0);

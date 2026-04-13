@@ -63,7 +63,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ResponseData<List<Product>> getAllActiveProducts() {
-        List<Product> products = productRepository.findByStatus(1);
+        List<Product> products = productRepository.findByStatusNot(0); // Admin sees 1 and 2 (active and out of stock)
         return new ResponseData<>(HttpStatus.OK.value(), "Lấy danh sách sản phẩm thành công", products);
     }
 
@@ -101,8 +101,15 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public long countAllProducts() {
-        return productRepository.count();
+    public ResponseData<Product> updateProductAvailability(Long id, Integer status) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm với ID: " + id));
+        if (status != 1 && status != 2) {
+            throw new RuntimeException("Trạng thái không hợp lệ");
+        }
+        product.setStatus(status);
+        Product updated = productRepository.save(product);
+        return new ResponseData<>(HttpStatus.OK.value(), "Cập nhật trạng thái sản phẩm thành công", updated);
     }
 
     // ==================== Private helpers ====================

@@ -22,5 +22,5 @@ public interface ProductService {
 
     ResponseData<Product> softDeleteProduct(Long id);
 
-    long countAllProducts();
+    ResponseData<Product> updateProductAvailability(Long id, Integer status);
 }

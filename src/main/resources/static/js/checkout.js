@@ -374,6 +374,10 @@ async function xulyDathang(product) {
             }, 2000);
         } else {
             let errMsg = await response.text();
+            try {
+                let errObj = JSON.parse(errMsg);
+                errMsg = errObj.message || errMsg;
+            } catch (e) {}
             toast({
                 title: 'Lỗi',
                 message: errMsg || 'Đặt hàng thất bại, vui lòng đăng nhập lại và thử lại.',
