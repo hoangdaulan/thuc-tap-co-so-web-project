@@ -38,6 +38,12 @@ public class AdminUserController {
         return ResponseEntity.ok(responseData);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ResponseData<User>> updateCustomer(@PathVariable Long id, @RequestBody User user) {
+        ResponseData<User> responseData = userService.updateUser(id, user);
+        return ResponseEntity.ok(responseData);
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ResponseData<String>> deleteCustomer(@PathVariable Long id) {
         ResponseData<String> responseData = userService.deleteUser(id);

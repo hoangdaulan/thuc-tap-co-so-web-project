@@ -11,6 +11,7 @@ import vn.team05.webfastfood.exception.GlobalExceptionHandler;
 import vn.team05.webfastfood.model.User;
 import vn.team05.webfastfood.service.UserService;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -20,9 +21,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = AdminUserRoleController.class)
+@WebMvcTest(controllers = AdminUserController.class)
 @Import(GlobalExceptionHandler.class)
-class AdminUserRoleControllerTest {
+class AdminUserControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -31,44 +32,34 @@ class AdminUserRoleControllerTest {
     private UserService userService;
 
     @Test
-    void updateRole_ReturnsUpdatedUser() throws Exception {
-        User userEntity = new User();
-        userEntity.setId(7L);
-        userEntity.setFullName("Employee Demo");
-        userEntity.setRole("EMPLOYEE");
+    void updateCustomer_ReturnsUpdatedUser() throws Exception {
+        User updatedUser = new User();
+        updatedUser.setId(15L);
+        updatedUser.setFullName("Nguyen Van A");
+        updatedUser.setPhone("0912345678");
+        updatedUser.setRole("USER");
+        updatedUser.setStatus(Boolean.TRUE);
 
-        when(userService.updateUserRole(eq(7L), eq("EMPLOYEE")))
-                .thenReturn(new ResponseData<>(200, "ok", userEntity));
+        when(userService.updateUser(eq(15L), any(User.class)))
+                .thenReturn(new ResponseData<>(200, "ok", updatedUser));
 
-        mockMvc.perform(put("/api/v1/admin/users/7/role")
+        mockMvc.perform(put("/api/admin/khach-hang/15")
                         .with(user("admin01").roles("ADMIN"))
                         .with(csrf())
                         .contentType(APPLICATION_JSON)
                         .content("""
-                                {"role":"EMPLOYEE"}
+                                {
+                                  "fullName":"Nguyen Van A",
+                                  "phone":"0912345678",
+                                  "email":"a@example.com",
+                                  "address":"Ha Noi",
+                                  "status":true,
+                                  "role":"USER"
+                                }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.role").value("EMPLOYEE"));
-    }
-
-    @Test
-    void updateRole_AcceptsShipper() throws Exception {
-        User userEntity = new User();
-        userEntity.setId(8L);
-        userEntity.setFullName("Shipper Demo");
-        userEntity.setRole("SHIPPER");
-
-        when(userService.updateUserRole(eq(8L), eq("SHIPPER")))
-                .thenReturn(new ResponseData<>(200, "ok", userEntity));
-
-        mockMvc.perform(put("/api/v1/admin/users/8/role")
-                        .with(user("admin01").roles("ADMIN"))
-                        .with(csrf())
-                        .contentType(APPLICATION_JSON)
-                        .content("""
-                                {"role":"SHIPPER"}
-                                """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.role").value("SHIPPER"));
+                .andExpect(jsonPath("$.data.id").value(15))
+                .andExpect(jsonPath("$.data.fullName").value("Nguyen Van A"))
+                .andExpect(jsonPath("$.data.role").value("USER"));
     }
 }

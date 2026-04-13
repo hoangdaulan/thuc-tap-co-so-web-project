@@ -417,6 +417,186 @@ function previewProductImage(input) {
 // Giữ lại hàm cũ để tránh lỗi nếu còn reference
 function uploadImage(el) { previewProductImage(el); }
 
+let shipperAutocompleteState = {
+    typedName: '',
+    typedPhone: '',
+    selectedId: null
+};
+
+function getAvailableShippers() {
+    return allUsersCache.filter(user =>
+        normalizeUserRole(user.role) === 'SHIPPER' && Boolean(user.status)
+    );
+}
+
+function findShipperById(id) {
+    return getAvailableShippers().find(user => user.id === id) || null;
+}
+
+function getMatchingShippers(keyword) {
+    const normalizedKeyword = (keyword || '').trim().toLowerCase();
+    const shippers = getAvailableShippers();
+    if (!normalizedKeyword) {
+        return shippers.slice(0, 8);
+    }
+
+    return shippers
+        .filter(user => (user.fullName || '').toLowerCase().includes(normalizedKeyword))
+        .slice(0, 8);
+}
+
+function applyShipperToInputs(shipper) {
+    const nameInput = document.getElementById('shipper-name-input');
+    const phoneInput = document.getElementById('shipper-phone-input');
+    if (!nameInput || !phoneInput || !shipper) return;
+
+    nameInput.value = shipper.fullName || '';
+    phoneInput.value = shipper.phone || '';
+}
+
+function restoreShipperInputState() {
+    const selectedShipper = shipperAutocompleteState.selectedId
+        ? findShipperById(shipperAutocompleteState.selectedId)
+        : null;
+
+    if (selectedShipper) {
+        applyShipperToInputs(selectedShipper);
+        return;
+    }
+
+    const nameInput = document.getElementById('shipper-name-input');
+    const phoneInput = document.getElementById('shipper-phone-input');
+    if (nameInput) nameInput.value = shipperAutocompleteState.typedName || '';
+    if (phoneInput) phoneInput.value = shipperAutocompleteState.typedPhone || '';
+}
+
+function hideShipperSuggestions() {
+    const container = document.getElementById('shipper-suggestions');
+    if (container) {
+        container.innerHTML = '';
+        container.classList.remove('open');
+    }
+}
+
+function previewShipperSuggestion(shipperId) {
+    const shipper = findShipperById(shipperId);
+    if (shipper) {
+        applyShipperToInputs(shipper);
+    }
+}
+
+function selectShipperSuggestion(shipperId) {
+    const shipper = findShipperById(shipperId);
+    if (!shipper) return;
+
+    shipperAutocompleteState.selectedId = shipper.id;
+    shipperAutocompleteState.typedName = shipper.fullName || '';
+    shipperAutocompleteState.typedPhone = shipper.phone || '';
+    applyShipperToInputs(shipper);
+    hideShipperSuggestions();
+}
+
+function renderShipperSuggestions(keyword) {
+    const container = document.getElementById('shipper-suggestions');
+    if (!container) return;
+
+    const suggestions = getMatchingShippers(keyword);
+    if (!suggestions.length) {
+        container.innerHTML = `<div class="shipper-suggestion-empty">KhĂ´ng tĂ¬m tháº¥y shipper phĂ¹ há»£p</div>`;
+        container.classList.add('open');
+        return;
+    }
+
+    container.innerHTML = suggestions.map(shipper => `
+        <button type="button"
+            class="shipper-suggestion-item"
+            data-shipper-id="${shipper.id}"
+            onmouseenter="previewShipperSuggestion(${shipper.id})"
+            onclick="selectShipperSuggestion(${shipper.id})">
+            <span class="shipper-suggestion-name">${shipper.fullName || 'ChÆ°a cĂ³ tĂªn'}</span>
+            <span class="shipper-suggestion-phone">${shipper.phone || ''}</span>
+        </button>
+    `).join('');
+    container.classList.add('open');
+}
+
+function initializeShipperAutocomplete(order) {
+    const nameInput = document.getElementById('shipper-name-input');
+    const phoneInput = document.getElementById('shipper-phone-input');
+    if (!nameInput || !phoneInput) return;
+
+    let autocompleteRoot = document.getElementById('shipper-autocomplete');
+    let suggestionBox = document.getElementById('shipper-suggestions');
+
+    if (!autocompleteRoot) {
+        const currentRow = nameInput.parentElement;
+        autocompleteRoot = document.createElement('div');
+        autocompleteRoot.id = 'shipper-autocomplete';
+        autocompleteRoot.className = 'shipper-autocomplete';
+        currentRow.parentNode.insertBefore(autocompleteRoot, currentRow);
+        autocompleteRoot.appendChild(currentRow);
+        currentRow.classList.add('shipper-autocomplete-row');
+    }
+
+    nameInput.classList.add('shipper-input');
+    phoneInput.classList.add('shipper-input');
+    phoneInput.setAttribute('readonly', 'readonly');
+
+    if (!suggestionBox) {
+        suggestionBox = document.createElement('div');
+        suggestionBox.id = 'shipper-suggestions';
+        suggestionBox.className = 'shipper-suggestions';
+        autocompleteRoot.appendChild(suggestionBox);
+    }
+
+    shipperAutocompleteState = {
+        typedName: order?.shipperName || '',
+        typedPhone: order?.shipperPhone || '',
+        selectedId: null
+    };
+
+    const matchedShipper = getAvailableShippers().find(user =>
+        (order?.shipperPhone && user.phone === order.shipperPhone)
+        || (order?.shipperName && user.fullName === order.shipperName)
+    );
+    if (matchedShipper) {
+        shipperAutocompleteState.selectedId = matchedShipper.id;
+        shipperAutocompleteState.typedName = matchedShipper.fullName || '';
+        shipperAutocompleteState.typedPhone = matchedShipper.phone || '';
+    }
+
+    restoreShipperInputState();
+
+    nameInput.addEventListener('input', () => {
+        shipperAutocompleteState.selectedId = null;
+        shipperAutocompleteState.typedName = nameInput.value.trim();
+        shipperAutocompleteState.typedPhone = '';
+        phoneInput.value = '';
+        renderShipperSuggestions(nameInput.value);
+    });
+
+    nameInput.addEventListener('focus', () => {
+        renderShipperSuggestions(nameInput.value);
+    });
+
+    suggestionBox.addEventListener('mouseleave', () => {
+        restoreShipperInputState();
+    });
+
+    document.addEventListener('click', function handleOutsideClick(event) {
+        const autocompleteRoot = document.getElementById('shipper-autocomplete');
+        if (!autocompleteRoot) {
+            document.removeEventListener('click', handleOutsideClick);
+            return;
+        }
+        if (!autocompleteRoot.contains(event.target)) {
+            hideShipperSuggestions();
+            restoreShipperInputState();
+            document.removeEventListener('click', handleOutsideClick);
+        }
+    });
+}
+
 // Đổi trạng thái đơn hàng qua API
 async function changeStatus(id, newStatus) {
     try {
@@ -707,6 +887,9 @@ async function detailOrderAdmin(id) {
 
     document.querySelector(".modal-detail-order").innerHTML = spHtml;
     document.querySelector(".modal-detail-bottom").innerHTML = bottomHtml;
+    if ((order.status == 0 || order.status == 1) && order.deliveryType === 'delivery') {
+        initializeShipperAutocomplete(order);
+    }
 }
 
 // Find Order
@@ -842,56 +1025,21 @@ window.addEventListener('DOMContentLoaded', () => { thongKe(); });
 // User
 let addAccount = document.getElementById('signup-button');
 let updateAccount = document.getElementById("btn-update-account")
+const ACCOUNT_MODE = {
+    CUSTOMER: 'USER',
+    EMPLOYEE: 'EMPLOYEE'
+};
+let currentAccountMode = ACCOUNT_MODE.CUSTOMER;
+let editingAccountId = null;
+
+function normalizeUserRole(role) {
+    return (role || 'USER').toUpperCase();
+}
 
 document.querySelector(".modal.signup .modal-close").addEventListener("click", () => {
     signUpFormReset();
 })
 
-function openCreateAccount() {
-    document.querySelector(".signup").classList.add("open");
-    document.querySelectorAll(".edit-account-e").forEach(item => {
-        item.style.display = "none"
-    })
-    document.querySelectorAll(".add-account-e").forEach(item => {
-        item.style.display = "block"
-    })
-}
-
-function signUpFormReset() {
-    document.getElementById('fullname').value = ""
-    document.getElementById('phone').value = ""
-    document.getElementById('password').value = ""
-    document.getElementById('email').value = ""
-    document.getElementById('address').value = ""
-    document.querySelector('.form-message-name').innerHTML = '';
-    document.querySelector('.form-message-phone').innerHTML = '';
-    document.querySelector('.form-message-password').innerHTML = '';
-}
-
-function showUserArr(arr) {
-    let accountHtml = '';
-    if (arr.length == 0) {
-        accountHtml = `<td colspan="5">Không có dữ liệu</td>`
-    } else {
-        arr.forEach((account, index) => {
-            let tinhtrang = account.status == 0 ? `<span class="status-no-complete">Bị khóa</span>` : `<span class="status-complete">Hoạt động</span>`;
-            accountHtml += ` <tr>
-            <td>${index + 1}</td>
-            <td>${account.fullname}</td>
-            <td>${account.phone}</td>
-            <td>${account.address}</td>
-            <td>${account.email}</td>
-            <td>${formatDate(account.join)}</td>
-            <td>${tinhtrang}</td>
-            <td class="control control-table">
-            <button class="btn-edit" id="edit-account" onclick='editAccount(${account.phone})' ><i class="fa-light fa-pen-to-square"></i></button>
-            <button class="btn-delete" id="delete-account" onclick="deleteAcount(${index})"><i class="fa-regular fa-trash"></i></button>
-            </td>
-        </tr>`
-        })
-    }
-    document.getElementById('show-user').innerHTML = accountHtml;
-}
 
 async function showUser() {
     try {
@@ -899,122 +1047,20 @@ async function showUser() {
         const resData = await response.json();
         const data = resData.data || [];
         allUsersCache = data;
-        renderUserTable(data);
+        applyAccountFilters();
         scheduleDashboardStatsUpdate();
     } catch (error) { console.error("Lỗi API:", error); }
 }
 
 function cancelSearchUser() {
-    document.getElementById("tinh-trang-user").value = 2;
-    document.getElementById("form-search-user").value = "";
-    document.getElementById("time-start-user").value = "";
-    document.getElementById("time-end-user").value = "";
-
-    showUser();
+    document.getElementById("tinh-trang-customer").value = 2;
+    document.getElementById("form-search-customer").value = "";
+    document.getElementById("time-start-customer").value = "";
+    document.getElementById("time-end-customer").value = "";
+    applyCustomerFilters();
 }
 
 
-function deleteAcount(phone) {
-    let accounts = JSON.parse(localStorage.getItem('accounts'));
-    let index = accounts.findIndex(item => item.phone == phone);
-    if (confirm("Bạn có chắc muốn xóa?")) {
-        accounts.splice(index, 1)
-    }
-    localStorage.setItem("accounts", JSON.stringify(accounts));
-    showUser();
-}
-
-let indexFlag;
-function editAccount(phone) {
-    document.querySelector(".signup").classList.add("open");
-    document.querySelectorAll(".add-account-e").forEach(item => {
-        item.style.display = "none"
-    })
-    document.querySelectorAll(".edit-account-e").forEach(item => {
-        item.style.display = "block"
-    })
-    let accounts = JSON.parse(localStorage.getItem("accounts"));
-    let index = accounts.findIndex(item => {
-        return item.phone == phone
-    })
-    indexFlag = index;
-    document.getElementById("fullname").value = accounts[index].fullname;
-    document.getElementById("phone").value = accounts[index].phone;
-    document.getElementById("password").value = accounts[index].password;
-    document.getElementById("user-status").checked = accounts[index].status == 1 ? true : false;
-}
-
-updateAccount.addEventListener("click", (e) => {
-    e.preventDefault();
-    let accounts = JSON.parse(localStorage.getItem("accounts"));
-    let fullname = document.getElementById("fullname").value;
-    let phone = document.getElementById("phone").value;
-    let password = document.getElementById("password").value;
-    if (fullname == "" || phone == "" || password == "") {
-        toast({ title: 'Chú ý', message: 'Vui lòng nhập đầy đủ thông tin !', type: 'warning', duration: 3000 });
-    } else {
-        accounts[indexFlag].fullname = document.getElementById("fullname").value;
-        accounts[indexFlag].phone = document.getElementById("phone").value;
-        accounts[indexFlag].password = document.getElementById("password").value;
-        accounts[indexFlag].status = document.getElementById("user-status").checked ? true : false;
-        localStorage.setItem("accounts", JSON.stringify(accounts));
-        toast({ title: 'Thành công', message: 'Thay đổi thông tin thành công !', type: 'success', duration: 3000 });
-        document.querySelector(".signup").classList.remove("open");
-        signUpFormReset();
-        showUser();
-    }
-})
-
-// Them khach hang
-const signupBtn = document.getElementById('signup-button');
-
-if (signupBtn) {
-    signupBtn.onclick = async function (e) {
-        e.preventDefault();
-
-        const nameVal = document.getElementById('fullname').value;
-        const phoneVal = document.getElementById('phone').value;
-        const passVal = document.getElementById('password').value;
-        const emailVal = document.getElementById('email').value;
-        const addressVal = document.getElementById('address').value;
-
-        if (!nameVal || !phoneVal || !passVal) {
-            alert("Vui lòng nhập đầy đủ thông tin!");
-            return;
-        }
-
-        const userData = {
-            fullName: nameVal,
-            phone: phoneVal,
-            password: passVal,
-            email: emailVal,
-            address: addressVal
-        };
-
-        try {
-            const response = await fetch('/api/admin/khach-hang', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(userData)
-            });
-
-            if (response.ok) {
-                alert("Thêm khách hàng thành công!");
-
-                await showUser();
-                scheduleDashboardStatsUpdate();
-
-                document.querySelector(".signup").classList.remove("open");
-                signUpFormReset();
-            } else {
-                const errorText = await response.text();
-                alert("Lỗi: " + errorText);
-            }
-        } catch (error) {
-            console.error("Lỗi kết nối API:", error);
-        }
-    };
-}
 
 document.getElementById("logout-acc").addEventListener('click', (e) => {
     e.preventDefault();
@@ -1079,7 +1125,7 @@ async function deleteAccount(id) {
             if (response.ok) {
                 alert("Đã xóa người dùng thành công!");
                 allUsersCache = allUsersCache.filter(user => user.id !== id);
-                renderUserTable(allUsersCache);
+                applyAccountFilters();
                 scheduleDashboardStatsUpdate();
             } else {
                 const errorMsg = await response.text();
@@ -1090,6 +1136,251 @@ async function deleteAccount(id) {
             alert("Không thể kết nối đến máy chủ!");
         }
     }
+}
+
+
+function getRoleLabel(role) {
+    return normalizeUserRole(role) === 'SHIPPER' ? 'Shipper' : 'Nhân viên';
+}
+
+
+function filterAccounts(data, { keyword = '', status = '2', start = '', end = '', role = 'ALL' } = {}) {
+    let filtered = [...data];
+
+    if (keyword) {
+        const normalizedKeyword = keyword.toLowerCase();
+        filtered = filtered.filter(user =>
+            (user.fullName || '').toLowerCase().includes(normalizedKeyword)
+            || (user.phone || '').toLowerCase().includes(normalizedKeyword)
+            || (user.email || '').toLowerCase().includes(normalizedKeyword)
+        );
+    }
+
+    if (status !== "2") {
+        const expectedStatus = status === "1";
+        filtered = filtered.filter(user => Boolean(user.status) === expectedStatus);
+    }
+
+    if (role !== 'ALL') {
+        filtered = filtered.filter(user => normalizeUserRole(user.role) === role);
+    }
+
+    if (start) {
+        const startDate = new Date(`${start}T00:00:00`);
+        filtered = filtered.filter(user => new Date(user.createdAt) >= startDate);
+    }
+    if (end) {
+        const endDate = new Date(`${end}T23:59:59`);
+        filtered = filtered.filter(user => new Date(user.createdAt) <= endDate);
+    }
+
+    return filtered;
+}
+
+function applyCustomerFilters() {
+    const filtered = filterAccounts(
+        allUsersCache.filter(user => normalizeUserRole(user.role) === 'USER'),
+        {
+            keyword: document.getElementById("form-search-customer")?.value || '',
+            status: document.getElementById("tinh-trang-customer")?.value || '2',
+            start: document.getElementById("time-start-customer")?.value || '',
+            end: document.getElementById("time-end-customer")?.value || ''
+        }
+    );
+    renderUserTable(filtered);
+}
+
+function applyEmployeeFilters() {
+    const filtered = filterAccounts(
+        allUsersCache.filter(user => ['EMPLOYEE', 'SHIPPER'].includes(normalizeUserRole(user.role))),
+        {
+            keyword: document.getElementById("form-search-employee")?.value || '',
+            status: document.getElementById("tinh-trang-employee")?.value || '2',
+            start: document.getElementById("time-start-employee")?.value || '',
+            end: document.getElementById("time-end-employee")?.value || '',
+            role: document.getElementById("role-employee")?.value || 'ALL'
+        }
+    );
+    renderEmployeeTable(filtered);
+}
+
+function applyAccountFilters() {
+    applyCustomerFilters();
+    applyEmployeeFilters();
+}
+
+function searchCustomer() {
+    applyCustomerFilters();
+}
+
+function searchEmployee() {
+    applyEmployeeFilters();
+}
+
+function cancelSearchCustomer() {
+    cancelSearchUser();
+}
+
+function cancelSearchEmployee() {
+    document.getElementById("tinh-trang-employee").value = "2";
+    document.getElementById("role-employee").value = "ALL";
+    document.getElementById("form-search-employee").value = "";
+    document.getElementById("time-start-employee").value = "";
+    document.getElementById("time-end-employee").value = "";
+    applyEmployeeFilters();
+}
+
+function setupUserFilters() {
+    const customerSearch = document.getElementById("form-search-customer");
+    const customerStatus = document.getElementById("tinh-trang-customer");
+    const customerStart = document.getElementById("time-start-customer");
+    const customerEnd = document.getElementById("time-end-customer");
+    const employeeSearch = document.getElementById("form-search-employee");
+    const employeeStatus = document.getElementById("tinh-trang-employee");
+    const employeeRole = document.getElementById("role-employee");
+    const employeeStart = document.getElementById("time-start-employee");
+    const employeeEnd = document.getElementById("time-end-employee");
+
+    if (customerSearch) customerSearch.oninput = applyCustomerFilters;
+    if (customerStatus) customerStatus.onchange = applyCustomerFilters;
+    if (customerStart) customerStart.onchange = applyCustomerFilters;
+    if (customerEnd) customerEnd.onchange = applyCustomerFilters;
+
+    if (employeeSearch) employeeSearch.oninput = applyEmployeeFilters;
+    if (employeeStatus) employeeStatus.onchange = applyEmployeeFilters;
+    if (employeeRole) employeeRole.onchange = applyEmployeeFilters;
+    if (employeeStart) employeeStart.onchange = applyEmployeeFilters;
+    if (employeeEnd) employeeEnd.onchange = applyEmployeeFilters;
+}
+
+function resetAccountMessages() {
+    document.querySelector('.form-message-name').innerHTML = '';
+    document.querySelector('.form-message-phone').innerHTML = '';
+    document.querySelector('.form-message-password').innerHTML = '';
+}
+
+function signUpFormReset() {
+    document.getElementById('fullname').value = "";
+    document.getElementById('phone').value = "";
+    document.getElementById('password').value = "";
+    document.getElementById('email').value = "";
+    document.getElementById('address').value = "";
+    document.getElementById('user-status').checked = true;
+    if (document.getElementById('account-role')) {
+        document.getElementById('account-role').value = 'EMPLOYEE';
+    }
+    const roleGroup = document.getElementById('account-role-group');
+    if (roleGroup) {
+        roleGroup.style.display = 'none';
+    }
+    editingAccountId = null;
+    currentAccountMode = ACCOUNT_MODE.CUSTOMER;
+    resetAccountMessages();
+}
+
+function getAccountRoleForSubmit() {
+    return currentAccountMode === ACCOUNT_MODE.EMPLOYEE
+        ? document.getElementById('account-role').value
+        : 'USER';
+}
+
+function configureAccountModal({ mode = ACCOUNT_MODE.CUSTOMER, isEdit = false, user = null } = {}) {
+    currentAccountMode = mode === ACCOUNT_MODE.EMPLOYEE ? ACCOUNT_MODE.EMPLOYEE : ACCOUNT_MODE.CUSTOMER;
+    editingAccountId = isEdit ? user?.id ?? null : null;
+
+    const title = document.getElementById('account-modal-title');
+    const editTitle = document.querySelector('.modal-container-title.edit-account-e');
+    const roleGroup = document.getElementById('account-role-group');
+    const passwordInput = document.getElementById('password');
+    const passwordLabel = document.querySelector("label[for='password']");
+
+    document.querySelector(".signup").classList.add("open");
+    document.querySelectorAll(".edit-account-e").forEach(item => {
+        item.style.display = isEdit ? "block" : "none";
+    });
+    document.querySelectorAll(".add-account-e").forEach(item => {
+        item.style.display = isEdit ? "none" : "block";
+    });
+
+    if (title) {
+        title.textContent = isEdit
+            ? (currentAccountMode === ACCOUNT_MODE.EMPLOYEE ? 'CHỈNH SỬA NHÂN VIÊN' : 'CHỈNH SỬA KHÁCH HÀNG')
+            : (currentAccountMode === ACCOUNT_MODE.EMPLOYEE ? 'THÊM NHÂN VIÊN MỚI' : 'THÊM KHÁCH HÀNG MỚI');
+    }
+    if (editTitle) {
+        editTitle.textContent = currentAccountMode === ACCOUNT_MODE.EMPLOYEE ? 'CHỈNH SỬA NHÂN VIÊN' : 'CHỈNH SỬA KHÁCH HÀNG';
+    }
+    if (roleGroup) {
+        roleGroup.style.display = currentAccountMode === ACCOUNT_MODE.EMPLOYEE ? 'block' : 'none';
+    }
+    if (passwordLabel) {
+        passwordLabel.textContent = isEdit ? 'Mật khẩu mới' : 'Mật khẩu';
+    }
+    if (passwordInput) {
+        passwordInput.placeholder = isEdit ? 'Để trống nếu không đổi mật khẩu' : 'Nhập mật khẩu';
+    }
+
+    if (user) {
+        document.getElementById('fullname').value = user.fullName || "";
+        document.getElementById('phone').value = user.phone || "";
+        document.getElementById('password').value = "";
+        document.getElementById('email').value = user.email || "";
+        document.getElementById('address').value = user.address || "";
+        document.getElementById('user-status').checked = Boolean(user.status);
+        if (document.getElementById('account-role')) {
+            const normalizedRole = normalizeUserRole(user.role);
+            document.getElementById('account-role').value = normalizedRole === 'SHIPPER' ? 'SHIPPER' : 'EMPLOYEE';
+        }
+    }
+}
+
+function openCreateAccount(mode = 'USER') {
+    signUpFormReset();
+    configureAccountModal({
+        mode: mode === ACCOUNT_MODE.EMPLOYEE ? ACCOUNT_MODE.EMPLOYEE : ACCOUNT_MODE.CUSTOMER,
+        isEdit: false
+    });
+}
+
+function editAccount(id, mode = 'USER') {
+    const user = allUsersCache.find(item => item.id === id);
+    if (!user) {
+        toast({ title: 'Lỗi', message: 'Không tìm thấy tài khoản cần chỉnh sửa', type: 'error', duration: 2500 });
+        return;
+    }
+    signUpFormReset();
+    configureAccountModal({
+        mode: mode === ACCOUNT_MODE.EMPLOYEE ? ACCOUNT_MODE.EMPLOYEE : ACCOUNT_MODE.CUSTOMER,
+        isEdit: true,
+        user
+    });
+}
+
+function getAccountFormData(requirePassword) {
+    const fullName = document.getElementById('fullname').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const address = document.getElementById('address').value.trim();
+
+    if (!fullName || !phone || (requirePassword && !password)) {
+        toast({ title: 'Chú ý', message: 'Vui lòng nhập đầy đủ thông tin bắt buộc', type: 'warning', duration: 2500 });
+        return null;
+    }
+
+    const payload = {
+        fullName,
+        phone,
+        email,
+        address,
+        role: getAccountRoleForSubmit()
+    };
+
+    if (requirePassword || password) {
+        payload.password = password;
+    }
+
+    return payload;
 }
 
 function renderUserTable(data) {
@@ -1111,70 +1402,124 @@ function renderUserTable(data) {
                 <td>${user.email || ''}</td>
                 <td><span class="${statusClass}">${statusText}</span></td>
                 <td class="control control-table">
-                    <button class="btn-edit" onclick="editAccount(${user.id})"><i class="fa-light fa-pen-to-square"></i></button>
+                    <button class="btn-edit" onclick="editAccount(${user.id}, 'USER')"><i class="fa-light fa-pen-to-square"></i></button>
                     <button class="btn-delete" onclick="deleteAccount(${user.id})"><i class="fa-regular fa-trash"></i></button>
                 </td>
             </tr>`;
         });
     }
-    document.getElementById('show-user').innerHTML = html;
+    document.getElementById('show-customer').innerHTML = html;
 }
 
-async function filterUser() {
-    const search = document.getElementById("form-search-user").value;
-    const status = document.getElementById("tinh-trang-user").value;
-    const start = document.getElementById("time-start-user").value;
-    const end = document.getElementById("time-end-user").value;
+function renderEmployeeTable(data) {
+    let html = '';
+    if (data.length === 0) {
+        html = `<tr><td colspan="9">Không tìm thấy nhân viên nào phù hợp</td></tr>`;
+    } else {
+        data.forEach((user, index) => {
+            let statusText = user.status === true ? "Hoạt động" : "Bị khóa";
+            let statusClass = user.status === true ? "status-complete" : "status-no-complete";
 
-    let filtered = [...allUsersCache];
-
-    if (search) {
-        const keyword = search.toLowerCase();
-        filtered = filtered.filter(user =>
-            (user.fullName || '').toLowerCase().includes(keyword)
-            || (user.phone || '').toLowerCase().includes(keyword)
-            || (user.email || '').toLowerCase().includes(keyword)
-        );
+            html += `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${user.fullName}</td>
+                <td>${getRoleLabel(user.role)}</td>
+                <td>${user.phone}</td>
+                <td>${formatDate(user.createdAt)}</td>
+                <td>${user.address || ''}</td>
+                <td>${user.email || ''}</td>
+                <td><span class="${statusClass}">${statusText}</span></td>
+                <td class="control control-table">
+                    <button class="btn-edit" onclick="editAccount(${user.id}, 'EMPLOYEE')"><i class="fa-light fa-pen-to-square"></i></button>
+                    <button class="btn-delete" onclick="deleteAccount(${user.id})"><i class="fa-regular fa-trash"></i></button>
+                </td>
+            </tr>`;
+        });
     }
-
-    if (status !== "2") {
-        const expectedStatus = status === "1";
-        filtered = filtered.filter(user => Boolean(user.status) === expectedStatus);
-    }
-
-    if (start) {
-        const startDate = new Date(`${start}T00:00:00`);
-        filtered = filtered.filter(user => new Date(user.createdAt) >= startDate);
-    }
-    if (end) {
-        const endDate = new Date(`${end}T23:59:59`);
-        filtered = filtered.filter(user => new Date(user.createdAt) <= endDate);
-    }
-
-    renderUserTable(filtered);
+    document.getElementById('show-employee').innerHTML = html;
 }
 
-function setupUserFilters() {
-    const searchInput = document.getElementById("form-search-user");
-    const statusSelect = document.getElementById("tinh-trang-user");
-    const dateStart = document.getElementById("time-start-user");
-    const dateEnd = document.getElementById("time-end-user");
-    const btnReset = document.querySelector(".btn-refresh-user");
+function bindAccountModalActions() {
+    const signupButton = document.getElementById('signup-button');
+    const updateButton = document.getElementById('btn-update-account');
+    if (!signupButton || !updateButton) return;
 
-    if (searchInput) searchInput.oninput = filterUser;
-    if (statusSelect) statusSelect.onchange = filterUser;
-    if (dateStart) dateStart.onchange = filterUser;
-    if (dateEnd) dateEnd.onchange = filterUser;
+    const newSignupButton = signupButton.cloneNode(true);
+    signupButton.parentNode.replaceChild(newSignupButton, signupButton);
+    addAccount = newSignupButton;
 
-    if (btnReset) {
-        btnReset.onclick = () => {
-            searchInput.value = "";
-            statusSelect.value = "2";
-            dateStart.value = "";
-            dateEnd.value = "";
-            showUser();
-        };
-    }
+    const newUpdateButton = updateButton.cloneNode(true);
+    updateButton.parentNode.replaceChild(newUpdateButton, updateButton);
+    updateAccount = newUpdateButton;
+
+    addAccount.onclick = async function (e) {
+        e.preventDefault();
+        const payload = getAccountFormData(true);
+        if (!payload) return;
+
+        try {
+            const response = await fetch('/api/admin/khach-hang', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const responseData = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(responseData.message || 'Không thể tạo tài khoản');
+            }
+
+            await showUser();
+            document.querySelector(".signup").classList.remove("open");
+            signUpFormReset();
+            toast({
+                title: 'Thành công',
+                message: currentAccountMode === ACCOUNT_MODE.EMPLOYEE ? 'Thêm nhân viên thành công' : 'Thêm khách hàng thành công',
+                type: 'success',
+                duration: 2500
+            });
+        } catch (error) {
+            toast({ title: 'Lỗi', message: error.message, type: 'error', duration: 3000 });
+        }
+    };
+
+    updateAccount.onclick = async function (e) {
+        e.preventDefault();
+        if (!editingAccountId) {
+            toast({ title: 'Thông báo', message: 'Không tìm thấy tài khoản cần cập nhật', type: 'warning', duration: 2500 });
+            return;
+        }
+
+        const payload = getAccountFormData(false);
+        if (!payload) return;
+        payload.status = document.getElementById('user-status').checked;
+
+        try {
+            const response = await fetch(`/api/admin/khach-hang/${editingAccountId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const responseData = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(responseData.message || 'Không thể cập nhật tài khoản');
+            }
+
+            allUsersCache = allUsersCache.map(user => user.id === responseData.data.id ? responseData.data : user);
+            applyAccountFilters();
+            scheduleDashboardStatsUpdate();
+            document.querySelector(".signup").classList.remove("open");
+            signUpFormReset();
+            toast({
+                title: 'Thành công',
+                message: currentAccountMode === ACCOUNT_MODE.EMPLOYEE ? 'Đã cập nhật tài khoản nhân viên' : 'Đã cập nhật tài khoản khách hàng',
+                type: 'success',
+                duration: 2500
+            });
+        } catch (error) {
+            toast({ title: 'Lỗi', message: error.message, type: 'error', duration: 3000 });
+        }
+    };
 }
 
 window.onload = function () {
@@ -1182,6 +1527,7 @@ window.onload = function () {
     showUser();
     scheduleDashboardStatsUpdate();
     setupUserFilters();
+    bindAccountModalActions();
     loadProductsFromApi();
     loadOrdersFromApi(); // Load đơn hàng từ API backend
     initOrderRealtime();

@@ -27,7 +27,7 @@ public class User extends BaseEntity {
     private String address;
 
     @Column(name = "role")
-    private String role; // "ADMIN" or "USER"
+    private String role; // "ADMIN", "USER", "EMPLOYEE", "SHIPPER"
 
     @Column(name = "status")
     private Boolean status = true;

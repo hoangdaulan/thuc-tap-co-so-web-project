@@ -186,6 +186,50 @@
         };
     }
 
+    function applyEmployeeLayoutRestrictions() {
+        if (!isEmployeeOnlyView()) return;
+
+        const tabs = document.querySelectorAll('.sidebar-list .tab-content');
+        const sections = document.querySelectorAll('.content .section');
+        const allowedTabIds = new Set(['employee-chat-tab', 'order-tab']);
+        const allowedPairs = [];
+
+        tabs.forEach((tab, index) => {
+            const isAllowedTab = allowedTabIds.has(tab.id);
+            const section = sections[index];
+
+            tab.style.display = isAllowedTab ? '' : 'none';
+            tab.classList.remove('active');
+
+            if (!section) return;
+
+            section.style.display = isAllowedTab ? '' : 'none';
+            section.classList.remove('active');
+
+            if (isAllowedTab) {
+                allowedPairs.push({ tab, section });
+            }
+        });
+
+        allowedPairs.forEach(({ tab, section }) => {
+            tab.onclick = function (event) {
+                event.preventDefault();
+                allowedPairs.forEach(pair => {
+                    pair.tab.classList.remove('active');
+                    pair.section.classList.remove('active');
+                });
+                tab.classList.add('active');
+                section.classList.add('active');
+            };
+        });
+
+        const defaultPair = allowedPairs.find(pair => pair.tab.id === 'employee-chat-tab') || allowedPairs[0];
+        if (defaultPair) {
+            defaultPair.tab.classList.add('active');
+            defaultPair.section.classList.add('active');
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         const user = currentUser();
         if (!user || !token() || user.userType === 0) return;
