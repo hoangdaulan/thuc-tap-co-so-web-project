@@ -143,4 +143,9 @@ public class ProductServiceImpl implements ProductService {
             throw new RuntimeException("Lỗi khi lưu ảnh: " + e.getMessage(), e);
         }
     }
+
+    @Override
+    public long countAllProducts() {
+        return productRepository.count();
+    }
 }

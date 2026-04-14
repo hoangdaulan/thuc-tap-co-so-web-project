@@ -65,9 +65,9 @@ public class AdminOrderController {
             @PathVariable Long id,
             @RequestBody Map<String, Object> body,
             org.springframework.security.core.Authentication authentication) {
-        Integer newStatus = body.containsKey("status") ? Integer.parseInt(body.get("status").toString()) : null;
-        String shipperName = body.containsKey("shipperName") ? body.get("shipperName").toString() : null;
-        String shipperPhone = body.containsKey("shipperPhone") ? body.get("shipperPhone").toString() : null;
+        Integer newStatus = body.get("status") != null ? Integer.parseInt(body.get("status").toString()) : null;
+        String shipperName = body.get("shipperName") != null ? body.get("shipperName").toString() : null;
+        String shipperPhone = body.get("shipperPhone") != null ? body.get("shipperPhone").toString() : null;
         String employeePhone = authentication != null ? authentication.getName() : null;
         ResponseData<OrderResponse> responseData = orderService.updateOrderStatus(id, newStatus, shipperName, shipperPhone, employeePhone);
         return ResponseEntity.ok(responseData);

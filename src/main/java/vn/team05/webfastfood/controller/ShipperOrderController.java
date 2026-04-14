@@ -32,7 +32,7 @@ public class ShipperOrderController {
             @PathVariable Long id,
             @RequestBody Map<String, Object> body,
             org.springframework.security.core.Authentication authentication) {
-        Integer newStatus = body.containsKey("status") ? Integer.parseInt(body.get("status").toString()) : null;
+        Integer newStatus = body.get("status") != null ? Integer.parseInt(body.get("status").toString()) : null;
         String shipperPhone = authentication != null ? authentication.getName() : null;
         ResponseData<OrderResponse> responseData = orderService.updateOrderStatusByShipper(id, newStatus, shipperPhone);
         return ResponseEntity.ok(responseData);

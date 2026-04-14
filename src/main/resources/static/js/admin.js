@@ -1767,10 +1767,11 @@ async function detailOrderDashboard(id) {
                 <input type="text" id="shipper-phone-input" placeholder="SDT Shipper" class="form-control" style="width: 150px; padding: 5px;">
             </div>`;
         }
+        let confirmStatus = order.deliveryType === 'pickup' ? 3 : 2;
         bottomHtml += `
         <div style="display: flex; gap: 10px;">
             <button class="modal-detail-btn btn-cap-nhat" style="background-color: #f44336;" onclick="changeStatus(${order.id}, 4)">Huy don</button>
-            <button class="modal-detail-btn btn-cap-nhat" onclick="changeStatus(${order.id}, 2)">Xac nhan don</button>
+            <button class="modal-detail-btn btn-cap-nhat" onclick="changeStatus(${order.id}, ${confirmStatus})">Xac nhan don</button>
         </div>`;
     } else {
         bottomHtml += `<span class="status-complete">Don hang da duoc xu ly</span>`;

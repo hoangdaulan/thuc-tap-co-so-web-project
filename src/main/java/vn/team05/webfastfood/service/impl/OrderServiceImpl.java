@@ -211,7 +211,7 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Thieu truong status");
         }
         if (newStatus != 3 && newStatus != 4 && newStatus != 5) {
-            throw new RuntimeException("Shipper chi duoc chuyen don sang Hoan thanh, Giao that bai hoac Huy don");
+            throw new RuntimeException("Shipper chỉ được chuyển đơn sang Hoàn thành, Giao thất bại hoặc Hủy đơn");
         }
 
         User shipper = userRepository.findByPhone(shipperPhone)
@@ -255,15 +255,15 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private String getStatusText(Integer status) {
-        if (status == null) return "Khong xac dinh";
+        if (status == null) return "Không xác định";
         return switch (status) {
-            case 0 -> "Cho xac nhan";
-            case 1 -> "Da xac nhan";
-            case 2 -> "Dang giao";
-            case 3 -> "Hoan thanh";
-            case 4 -> "Da huy";
-            case 5 -> "Giao that bai";
-            default -> "Khong xac dinh";
+            case 0 -> "Chờ xác nhận";
+            case 1 -> "Đã xác nhận";
+            case 2 -> "Đang giao";
+            case 3 -> "Hoàn thành";
+            case 4 -> "Đã hủy";
+            case 5 -> "Giao thất bại";
+            default -> "Không xác định";
         };
     }
 
