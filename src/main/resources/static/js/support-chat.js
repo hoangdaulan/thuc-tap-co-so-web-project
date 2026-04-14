@@ -3,6 +3,7 @@
     const currentUser = () => JSON.parse(localStorage.getItem('currentuser') || 'null');
     let messages = [];
     let eventSource = null;
+    let hiddenByCart = false;
 
     function formatTime(value) {
         return new Date(value).toLocaleString('vi-VN');
@@ -53,6 +54,12 @@
         const textarea = form.querySelector('textarea');
         form.addEventListener('submit', submitMessage);
         bindEnterToSend(textarea, form);
+    }
+
+    function setWidgetVisibility(hidden) {
+        const widget = document.querySelector('.support-chat-widget');
+        if (!widget) return;
+        widget.style.display = hidden ? 'none' : '';
     }
 
     function ensureEmployeeEntryPoint() {
@@ -199,6 +206,10 @@
         if (currentUser() && token()) {
             initializeChat();
         }
+    });
+    document.addEventListener('cart:toggle', event => {
+        hiddenByCart = Boolean(event.detail && event.detail.open);
+        setWidgetVisibility(hiddenByCart);
     });
     window.addEventListener('beforeunload', () => {
         if (eventSource) {

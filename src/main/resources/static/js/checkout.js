@@ -1,4 +1,5 @@
-const PHIVANCHUYEN = 30000;
+﻿const PHIVANCHUYEN = 30000;
+const PICKUP_STORE_ADDRESS = "1 Trần Phú, Hà Đông, Hà Nội";
 let priceFinal = document.getElementById("checkout-cart-price-final");
 
 // Trạng thái mã giảm giá
@@ -19,7 +20,7 @@ async function applyCoupon() {
         if (res.ok && data.data) {
             appliedCoupon = data.data;
             msgEl.style.color = 'green';
-            msgEl.innerText = `✅ Áp dụng thành công! Giảm ${appliedCoupon.discountPercentage}%`;
+            msgEl.innerText = `Áp dụng thành công! Giảm ${appliedCoupon.discountPercentage}%`;
             recalculateTotal();
         } else {
             appliedCoupon = null;
@@ -57,7 +58,7 @@ function recalculateTotal() {
 }
 
 function thanhtoanpage(option,product) {
-    // Xu ly ngay nhan hang
+    // Xử lý ngày nhận hàng
     let today = new Date();
     let ngaymai = new Date();
     let ngaykia = new Date();
@@ -98,14 +99,14 @@ function thanhtoanpage(option,product) {
 
     let totalBillOrder = document.querySelector('.total-bill-order');
     let totalBillOrderHtml;
-    // Xu ly don hang
+    // Xử lý đơn hàng
     switch (option) {
-        case 1: // Truong hop thanh toan san pham trong gio
+        case 1: // Trường hợp thanh toán sản phẩm trong giỏ
             _checkoutOption = 1;
             _checkoutProduct = null;
-            // Hien thi don hang
+            // Hiển thị đơn hàng
             showProductCart();
-            // Tinh tien
+            // Tính tiền
             totalBillOrderHtml = `<div class="priceFlx">
             <div class="text">
                 Tiền hàng 
@@ -121,15 +122,15 @@ function thanhtoanpage(option,product) {
                 <span>${vnd(PHIVANCHUYEN)}</span>
             </div>
         </div>`;
-            // Tong tien
+            // Tổng tiền
             priceFinal.innerText = vnd(getCartTotal() + PHIVANCHUYEN);
             break;
-        case 2: // Truong hop mua ngay
+        case 2: // Trường hợp mua ngay
             _checkoutOption = 2;
             _checkoutProduct = product;
-            // Hien thi san pham
+            // Hiển thị sản phẩm
             showProductBuyNow(product);
-            // Tinh tien
+            // Tính tiền
             totalBillOrderHtml = `<div class="priceFlx">
                 <div class="text">
                     Tiền hàng 
@@ -145,19 +146,30 @@ function thanhtoanpage(option,product) {
                     <span>${vnd(PHIVANCHUYEN)}</span>
                 </div>
             </div>`
-            // Tong tien
+            // Tổng tiền
             priceFinal.innerText = vnd((product.soluong * product.price) + PHIVANCHUYEN);
             break;
     }
 
-    // Tinh tien
+    // Tính tiền
     totalBillOrder.innerHTML = totalBillOrderHtml;
 
-    // Xu ly hinh thuc giao hang
+    // Xử lý hình thức giao hàng
     let giaotannoi = document.querySelector('#giaotannoi');
     let tudenlay = document.querySelector('#tudenlay');
     let tudenlayGroup = document.querySelector('#tudenlay-group');
+    let diachinhanInput = document.querySelector('#diachinhan');
     let chkShip = document.querySelectorAll(".chk-ship");
+
+    if (tudenlayGroup) {
+        tudenlayGroup.innerHTML = `
+            <p class="checkout-content-label">Lấy hàng tại cửa hàng</p>
+            <div class="pickup-store-address">
+                <i class="fa-light fa-location-dot"></i>
+                <span>${PICKUP_STORE_ADDRESS}</span>
+            </div>
+        `;
+    }
     
     tudenlay.addEventListener('click', () => {
         giaotannoi.classList.remove("active");
@@ -166,6 +178,9 @@ function thanhtoanpage(option,product) {
             item.style.display = "none";
         });
         tudenlayGroup.style.display = "block";
+        if (diachinhanInput) {
+            diachinhanInput.value = PICKUP_STORE_ADDRESS;
+        }
         recalculateTotal();
     })
 
@@ -176,10 +191,14 @@ function thanhtoanpage(option,product) {
         chkShip.forEach(item => {
             item.style.display = "flex";
         });
+        if (diachinhanInput) {
+            let currentUser = localStorage.getItem('currentuser') ? JSON.parse(localStorage.getItem('currentuser')) : null;
+            diachinhanInput.value = (currentUser && currentUser.address) ? currentUser.address : '';
+        }
         recalculateTotal();
     })
 
-    // Su kien khu nhan nut dat hang
+    // Sự kiện khi nhấn nút đặt hàng
     document.querySelector(".complete-checkout-btn").onclick = () => {
         switch (option) {
             case 1:
@@ -192,7 +211,7 @@ function thanhtoanpage(option,product) {
     }
 }
 
-// Hien thi hang trong gio
+// Hiển thị hàng trong giỏ
 function showProductCart() {
     let currentuser = JSON.parse(localStorage.getItem('currentuser'));
     let listOrder = document.getElementById("list-order-checkout");
@@ -209,7 +228,7 @@ function showProductCart() {
     listOrder.innerHTML = listOrderHtml;
 }
 
-// Hien thi hang mua ngay
+// Hiển thị hàng mua ngay
 function showProductBuyNow(product) {
     let listOrder = document.getElementById("list-order-checkout");
     let listOrderHtml = `<div class="food-total">
@@ -221,7 +240,7 @@ function showProductBuyNow(product) {
     listOrder.innerHTML = listOrderHtml;
 }
 
-//Open Page Checkout
+// Open Page Checkout
 let nutthanhtoan = document.querySelector('.thanh-toan')
 let checkoutpage = document.querySelector('.checkout-page');
 nutthanhtoan.addEventListener('click', () => {
@@ -257,7 +276,7 @@ function dathangngay() {
             closeCart();
             body.style.overflow = "hidden"
         } else {
-            toast({ title: 'Warning', message: 'Chưa đăng nhập tài khoản !', type: 'warning', duration: 3000 });
+            toast({ title: 'Warning', message: 'Chưa đăng nhập tài khoản!', type: 'warning', duration: 3000 });
         }
     }
 }
@@ -268,7 +287,7 @@ function closecheckout() {
     body.style.overflow = "auto"
 }
 
-// Thong tin cac don hang da mua - Xu ly khi nhan nut dat hang
+// Thông tin các đơn hàng đã mua - Xử lý khi nhấn nút đặt hàng
 async function xulyDathang(product) {
     let diachinhan = "";
     let hinhthucgiao = "";
@@ -280,7 +299,7 @@ async function xulyDathang(product) {
     let giaovaogio = document.querySelector("#deliverytime");
     let currentUser = JSON.parse(localStorage.getItem('currentuser'));
     
-    // Hinh thuc giao & Dia chi nhan hang
+    // Hình thức giao & Địa chỉ nhận hàng
     if(giaotannoi.classList.contains("active")) {
         diachinhan = document.querySelector("#diachinhan").value;
         hinhthucgiao = "Giao tận nơi";
@@ -288,18 +307,11 @@ async function xulyDathang(product) {
     }
     if(tudenlay.classList.contains("active")){
         deliveryType = "pickup";
-        let chinhanh1 = document.querySelector("#chinhanh-1");
-        let chinhanh2 = document.querySelector("#chinhanh-2");
-        if(chinhanh1.checked) {
-            diachinhan = "273 An Dương Vương, Phường 3, Quận 5";
-        }
-        if(chinhanh2.checked) {
-            diachinhan = "04 Tôn Đức Thắng, Phường Bến Nghé, Quận 1";
-        }
+        diachinhan = PICKUP_STORE_ADDRESS;
         hinhthucgiao = "Tự đến lấy";
     }
 
-    // Thoi gian nhan hang
+    // Thời gian nhận hàng
     if(giaongay.checked) {
         thoigiangiao = "Giao ngay khi xong";
     }
@@ -314,7 +326,7 @@ async function xulyDathang(product) {
     let shippingDate = document.querySelector(".pick-date.active").getAttribute("data-date");
 
     if(tennguoinhan == "" || sdtnhan == "" || diachinhan == "") {
-        toast({ title: 'Chú ý', message: 'Vui lòng nhập đầy đủ thông tin !', type: 'warning', duration: 4000 });
+        toast({ title: 'Chú ý', message: 'Vui lòng nhập đầy đủ thông tin!', type: 'warning', duration: 4000 });
         return;
     }
 
@@ -346,6 +358,7 @@ async function xulyDathang(product) {
         recipientName: tennguoinhan,
         recipientPhone: sdtnhan,
         deliveryAddress: diachinhan,
+        branch: deliveryType === "pickup" ? PICKUP_STORE_ADDRESS : null,
         deliveryTime: thoigiangiao,
         couponCode: appliedCoupon ? appliedCoupon.code : null,
         items: items
@@ -368,7 +381,7 @@ async function xulyDathang(product) {
                 currentUser.cart = [];
                 localStorage.setItem('currentuser', JSON.stringify(currentUser));
             }
-            toast({ title: 'Thành công', message: 'Đặt hàng thành công !', type: 'success', duration: 2000 });
+            toast({ title: 'Thành công', message: 'Đặt hàng thành công!', type: 'success', duration: 2000 });
             setTimeout(() => {
                 window.location = "/";
             }, 2000);
@@ -442,7 +455,7 @@ function xulyDathangLocal(product, currentUser, apiItems, requestBody) {
     localStorage.setItem("order", JSON.stringify(order));
     localStorage.setItem("currentuser", JSON.stringify(currentUser));
     localStorage.setItem("orderDetails", JSON.stringify(orderDetails));
-    toast({ title: 'Thành công', message: 'Đặt hàng thành công !', type: 'success', duration: 2000 });
+    toast({ title: 'Thành công', message: 'Đặt hàng thành công!', type: 'success', duration: 2000 });
     setTimeout(() => {
         window.location = "/";
     }, 2000);

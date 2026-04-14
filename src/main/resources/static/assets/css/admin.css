@@ -368,10 +368,14 @@ body,input,button,textarea,pre {
 .sidebar-icon {
     font-size: 24px;
     flex-shrink: 0;
+    width: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .sidebar-list .hidden-sidebar {
-    margin-left: 1.5rem;
+    margin-left: 0.9rem;
     white-space: nowrap;
 }
 
@@ -383,6 +387,7 @@ body,input,button,textarea,pre {
     text-decoration: none;
     align-items: center;
     padding-left: 25px;
+    gap: 0;
 }
 
 .sidebar-link:hover {

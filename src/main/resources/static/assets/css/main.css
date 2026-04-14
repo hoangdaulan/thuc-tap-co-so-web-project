@@ -1,4 +1,4 @@
-@font-face{font-family:'SFProDisplay';src:url('../font/SFPRODISPLAY/SFProDisplay-Regular.ttf') format('truetype');font-weight:400;font-display:fallback}
+﻿@font-face{font-family:'SFProDisplay';src:url('../font/SFPRODISPLAY/SFProDisplay-Regular.ttf') format('truetype');font-weight:400;font-display:fallback}
 @font-face{font-family:'SFProDisplay';src:url('../font/SFPRODISPLAY/SFProDisplay-Light.ttf') format('truetype');font-weight:300;font-display:fallback}
 @font-face{font-family:'SFProDisplay';src:url('../font/SFPRODISPLAY/SFProDisplay-Medium.ttf') format('truetype');font-weight:500;font-display:fallback}
 @font-face{font-family:'SFProDisplay';src:url('../font/SFPRODISPLAY/SFProDisplay-Bold.ttf') format('truetype');font-weight:bold;font-display:fallback}
@@ -2168,6 +2168,23 @@ input[type=number] {
     display: none;
 }
 
+.pickup-store-address {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border: 1px solid #d9d9d9;
+    border-radius: 10px;
+    background: #fff8f2;
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.pickup-store-address i {
+    color: var(--red);
+    font-size: 18px;
+}
+
 .content-group.chk-ship {
     display: flex;
     flex-direction: column;
@@ -2428,3 +2445,4 @@ input[type=number] {
 }
 .btn-cancel-order:hover { background-color: #2d3436 !important; }
 .loading-spinner { text-align: center; padding: 30px; color: #888; font-size: 16px; }
+

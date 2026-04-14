@@ -284,12 +284,18 @@ function openCart() {
     showCart();
     document.querySelector('.modal-cart').classList.add('open');
     body.style.overflow = "hidden";
+    document.dispatchEvent(new CustomEvent('cart:toggle', {
+        detail: { open: true }
+    }));
 }
 
 function closeCart() {
     document.querySelector('.modal-cart').classList.remove('open');
     body.style.overflow = "auto";
     updateAmount();
+    document.dispatchEvent(new CustomEvent('cart:toggle', {
+        detail: { open: false }
+    }));
 }
 
 // Open Search Advanced
