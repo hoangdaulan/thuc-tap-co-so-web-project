@@ -80,6 +80,14 @@ function configureShipperDashboard() {
         pageTitle.placeholder = 'Tim kiem ma don, nguoi nhan...';
     }
 
+    const orderHeaderRow = document.querySelector('#showOrder')?.closest('table')?.querySelector('thead tr');
+    if (orderHeaderRow && !orderHeaderRow.querySelector('[data-shipper-address-column="true"]')) {
+        const addressHeader = document.createElement('td');
+        addressHeader.textContent = 'Địa chỉ';
+        addressHeader.setAttribute('data-shipper-address-column', 'true');
+        orderHeaderRow.insertBefore(addressHeader, orderHeaderRow.children[3] || null);
+    }
+
     activateSectionByIndex(4);
 }
 
@@ -881,7 +889,7 @@ function enhanceShipperOrderRows(orders) {
 function showOrder(arr) {
     let orderHtml = "";
     if (!arr || arr.length == 0) {
-        orderHtml = `<tr><td colspan="6">Không có dữ liệu</td></tr>`
+        orderHtml = `<tr><td colspan="${isShipperDashboard() ? 7 : 6}">Không có dữ liệu</td></tr>`
     } else {
         arr.forEach((item) => {
             let statusText = item.statusText || 'Chờ xác nhận';
@@ -891,11 +899,13 @@ function showOrder(arr) {
             else statusClass = 'status-no-complete';
             let date = formatDate(item.createdAt || new Date());
             let recipientInfo = item.recipientPhone || item.user?.phone || '';
+            let deliveryAddress = item.deliveryAddress || item.branch || '';
             orderHtml += `
             <tr>
             <td>${item.id}</td>
             <td>${recipientInfo}</td>
             <td>${date}</td>
+            ${isShipperDashboard() ? `<td>${deliveryAddress}</td>` : ''}
             <td>${vnd(item.totalPrice || 0)}</td>
             <td><span class="${statusClass}">${statusText}</span></td>
             <td class="control">
