@@ -182,25 +182,61 @@ function paginationChange(page, productAll, currentPage) {
 }
 
 // Hiển thị danh sách sản phẩm từ mảng
+function resolveProductImage(image) {
+    let imgSrc = image ? String(image).trim().replace(/\\/g, "/") : "";
+
+    if (!imgSrc || imgSrc === "null" || imgSrc === "undefined" || imgSrc.endsWith("/blank-image.png") || imgSrc === "blank-image.png") {
+        return "./assets/img/blank-image.png";
+    }
+
+    if (
+        imgSrc.startsWith("http://") ||
+        imgSrc.startsWith("https://") ||
+        imgSrc.startsWith("//") ||
+        imgSrc.startsWith("data:") ||
+        imgSrc.startsWith("blob:")
+    ) {
+        return imgSrc;
+    }
+
+    const staticPathMarker = "/static/";
+    if (imgSrc.includes(staticPathMarker)) {
+        imgSrc = imgSrc.substring(imgSrc.indexOf(staticPathMarker) + staticPathMarker.length);
+    }
+
+    const productPathMarker = "assets/img/products/";
+    if (imgSrc.includes(productPathMarker)) {
+        return `./${imgSrc.substring(imgSrc.lastIndexOf(productPathMarker))}`;
+    }
+
+    if (
+        imgSrc.startsWith("/") ||
+        imgSrc.startsWith("./") ||
+        imgSrc.startsWith("../")
+    ) {
+        return imgSrc;
+    }
+
+    if (imgSrc.includes("/")) {
+        return imgSrc.startsWith("assets/") ? `./${imgSrc}` : imgSrc;
+    }
+
+    return `./assets/img/products/${imgSrc}`;
+}
+
 function showProductArr(arr) {
     let productHtml = "";
     if (arr.length == 0) {
         productHtml = `<div class="no-result"><div class="no-result-i"><i class="fa-light fa-face-sad-cry"></i></div><div class="no-result-h">Không có sản phẩm để hiển thị</div></div>`;
     } else {
         arr.forEach(product => {
-            // Xử lý ảnh: nếu image là tên file thì thêm path, nếu đã là URL thì giữ nguyên
-            let imgSrc = product.image
-                ? (product.image.startsWith('http') || product.image.startsWith('/')
-                    ? product.image
-                    : `./assets/img/products/${product.image}`)
-                : './assets/img/blank-image.png';
             let categoryName = product.category ? product.category.name : '';
             let isDeleted = product.status == 0;
             let currentStatus = product.status == null ? 1 : product.status;
             let statusBtnText = currentStatus == 1 ? "Còn món" : "Hết món";
             let nextStatus = currentStatus == 1 ? 2 : 1;
             let btnColor = currentStatus == 1 ? "#4CAF50" : "#f44336";
-            
+
             let statusSelect = !isDeleted ? `
               <button style="padding: 5px 10px; border-radius: 4px; border: none; margin-right: 5px; cursor: pointer; color: white; font-weight: bold; background-color: ${btnColor};" onclick="changeProductAvailability(${product.id}, ${nextStatus})">
                  ${statusBtnText}
@@ -213,7 +249,7 @@ function showProductArr(arr) {
             productHtml += `
             <div class="list">
                     <div class="list-left">
-                    <img src="${imgSrc}" alt="">
+                    ${renderProductImage(product.image)}
                     <div class="list-info">
                         <h4>${product.title}</h4>
                         <p class="list-note">${product.description || ''}</p>
@@ -236,6 +272,10 @@ function showProductArr(arr) {
         });
     }
     document.getElementById("show-product").innerHTML = productHtml;
+}
+
+function renderProductImage(src) {
+    return `<img src="${resolveProductImage(src)}" alt="" onerror="this.onerror=null;this.src='./assets/img/blank-image.png';">`;
 }
 
 // Cache danh sách sản phẩm lấy từ API
@@ -935,13 +975,9 @@ async function detailOrderAdmin(id) {
     let spHtml = `<div class="modal-detail-left"><div class="order-item-group">`;
     if (order.items && order.items.length > 0) {
         order.items.forEach(item => {
-            let imgSrc = item.productImage || './assets/img/blank-image.png';
-            if (imgSrc && !imgSrc.startsWith('http') && !imgSrc.startsWith('/') && !imgSrc.startsWith('./')) {
-                imgSrc = `./assets/img/products/${imgSrc}`;
-            }
             spHtml += `<div class="order-product">
                 <div class="order-product-left">
-                    <img src="${imgSrc}" alt="">
+                    ${renderProductImage(item.productImage)}
                     <div class="order-product-info">
                         <h4>${item.productTitle}</h4>
                         <p class="order-product-note"><i class="fa-light fa-pen"></i> ${item.note || 'Không có ghi chú'}</p>
@@ -1689,13 +1725,9 @@ async function detailOrderDashboard(id) {
     let spHtml = `<div class="modal-detail-left"><div class="order-item-group">`;
     if (order.items && order.items.length > 0) {
         order.items.forEach(item => {
-            let imgSrc = item.productImage || './assets/img/blank-image.png';
-            if (imgSrc && !imgSrc.startsWith('http') && !imgSrc.startsWith('/') && !imgSrc.startsWith('./')) {
-                imgSrc = `./assets/img/products/${imgSrc}`;
-            }
             spHtml += `<div class="order-product">
                 <div class="order-product-left">
-                    <img src="${imgSrc}" alt="">
+                    ${renderProductImage(item.productImage)}
                     <div class="order-product-info">
                         <h4>${item.productTitle}</h4>
                         <p class="order-product-note"><i class="fa-light fa-pen"></i> ${item.note || 'Khong co ghi chu'}</p>
@@ -1931,4 +1963,3 @@ window.addEventListener('beforeunload', function () {
         orderRealtimeSource.close();
     }
 });
-

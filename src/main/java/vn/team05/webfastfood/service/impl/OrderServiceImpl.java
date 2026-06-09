@@ -301,16 +301,36 @@ public class OrderServiceImpl implements OrderService {
                 if (item.getProduct() != null) {
                     ir.setProductId(item.getProduct().getId());
                     ir.setProductTitle(item.getProduct().getTitle());
-                    String img = item.getProduct().getImage();
-                    if (img != null && !img.startsWith("http") && !img.startsWith("/")) {
-                        img = "./assets/img/products/" + img;
-                    }
-                    ir.setProductImage(img);
+                    ir.setProductImage(normalizeProductImage(item.getProduct().getImage()));
                 }
                 itemResponses.add(ir);
             }
         }
         res.setItems(itemResponses);
         return res;
+    }
+
+    private String normalizeProductImage(String image) {
+        if (image == null || image.trim().isEmpty()) {
+            return "./assets/img/blank-image.png";
+        }
+
+        String img = image.trim().replace("\\", "/");
+        if (img.equals("blank-image.png") || img.endsWith("/blank-image.png")) {
+            return "./assets/img/blank-image.png";
+        }
+        if (img.startsWith("http://") || img.startsWith("https://") || img.startsWith("/")
+                || img.startsWith("./") || img.startsWith("../")
+                || img.startsWith("data:") || img.startsWith("blob:")) {
+            return img;
+        }
+        if (img.contains("/static/")) {
+            return "./" + img.substring(img.indexOf("/static/") + "/static/".length());
+        }
+        if (img.startsWith("assets/")) {
+            return "./" + img;
+        }
+
+        return "./assets/img/products/" + img;
     }
 }
